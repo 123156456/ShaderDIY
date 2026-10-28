@@ -41,7 +41,7 @@ Host 文件（.sdiy）
 ShaderDIY "ShaderDIY/大类/名字"
 {
     Meta {
-        Category = PBR | Toon | Unlit | Custom     // 对应第 1 区大类
+        Category = PBR | Toon | Unlit | Custom | Atmosphere
         Pipeline = URP
         Description = "说明"
         CompanionScripts = ShaderDIY.PBRCompanion  // 赋材质时自动挂，逗号分隔，可空
@@ -58,9 +58,11 @@ ShaderDIY "ShaderDIY/大类/名字"
 
     Formula { C = Dd + Ds + Id + Is + E }          // 第 4 区总公式
 
-    [SLOT DirectDiffuse Default="Lambert" Signature="half3 EvaluateDirectDiffuse(ShadingContext ctx)"]
+    [SLOT DirectDiffuse Default="Lambert" Signature="float3 EvaluateDirectDiffuse(ShadingContext ctx)"]
+    [SLOT LayerSSS Default="无" Kind="Addon" Signature="float3 EvaluateLayerSSS(ShadingContext ctx)"]
     // Default 必须是已有模块的 Module "名字"
     // Signature 的函数名必须在该槽每一个 .sdiym 的 HLSL 里出现
+    // Kind="Addon" 时第 3 区顶部变成开关，不是下拉
 
     HLSLINCLUDE {
         // #SLOT_INJECT     占位。编译时模块函数插在 Vert/Frag 前面
@@ -137,14 +139,22 @@ FillLight 会填 L/H 和所有点积。各向异性 NDF 用 T/B 点积。
 
 内置 PBR 槽（可直接写替换模块）
 --------------------------------
-DirectDiffuse      half3 EvaluateDirectDiffuse(ShadingContext ctx)
-DirectSpecular     half3 EvaluateDirectSpecular(ShadingContext ctx)
-IndirectDiffuse    half3 EvaluateIndirectDiffuse(ShadingContext ctx)
-IndirectSpecular   half3 EvaluateIndirectSpecular(ShadingContext ctx)
-NDF                half  EvaluateNDF(ShadingContext ctx)
+NDF / G / F / F0 / Light / DirectSpecular / DirectDiffuse /
+IndirectDiffuse / IndirectSpecular
+LayerSSS / LayerParallax / LayerRefraction（Kind=Addon）
 
-PBR Host 在 Frag 里已经调用前四个；NDF 由高光模块内部再调 EvaluateNDF。
-给 NDF 写新模型时，函数名必须是 EvaluateNDF，返回 half。
+函数名见仓库 README。PBR Host 在 Frag 里已经调用这些函数。
+给 NDF 写新模型时，函数名必须是 EvaluateNDF。
+
+大气槽
+------
+Transmittance      路径积分 / 查表（模块提供 GetTransmittance）
+InScattering       float3 EvaluateAtmosphere(float3 positionWS)
+
+自定义
+------
+第 1 区选「自定义」。新建 Host 时 Category=Custom，自己声明 [SLOT]。
+给已有槽加算法：新建同 Slot、同 Signature 的 .sdiym 即可。
 
 新建流程
 --------

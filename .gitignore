@@ -1,13 +1,28 @@
-# Unity
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
-MemoryCaptures/
-Recordings/
+# This repo ships Assets/ShaderDIY only. Ignore a full Unity project if present.
+/ProjectSettings/
+/Packages/
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Recordings/
+/Tools/
+/Assets/Settings/
+/Assets/TutorialInfo/
+/Assets/Sence/
+/Assets/Sence.meta
+/Assets/Settings.meta
+/Assets/TutorialInfo.meta
+/Assets/Readme.asset
+/Assets/Readme.asset.meta
+/Assets/UniversalRenderPipelineGlobalSettings.asset
+/Assets/UniversalRenderPipelineGlobalSettings.asset.meta
+
+# Unity generated
 ExportedObj/
 .consulo/
 .vs/
@@ -43,5 +58,5 @@ Thumbs.db
 Desktop.ini
 
 # ShaderDIY compile output (rebuilt in the editor)
-/[Aa]ssets/ShaderDIY/Generated/*.shader
-/[Aa]ssets/ShaderDIY/Generated/*.shader.meta
+/Assets/ShaderDIY/Generated/*.shader
+/Assets/ShaderDIY/Generated/*.shader.meta
