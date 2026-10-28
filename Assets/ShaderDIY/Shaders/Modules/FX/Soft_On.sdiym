@@ -13,7 +13,7 @@ Module "软粒子" Slot="Soft" Category="FX"
     {
         float4 EvaluateFXSoft(ShaderDIYVaryings i, float4 col)
         {
-            float2 screenUV = i.positionCS.xy / _ScaledScreenParams.xy;
+            float2 screenUV = GetNormalizedScreenSpaceUV(i.positionCS);
             float sceneZ = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);
             float thisZ = LinearEyeDepth(i.positionCS.z, _ZBufferParams);
             float fade = saturate((sceneZ - thisZ) / max(_SoftFade, 1e-4));

@@ -560,8 +560,29 @@ namespace ShaderDIY.Editor
                 inner = type.Substring(a + 1, b - a - 1);
             var parts = inner.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             var list = new List<string>(parts.Length);
-            for (int i = 0; i < parts.Length; i++)
-                list.Add(parts[i].Trim());
+            bool paired = parts.Length >= 2 && parts.Length % 2 == 0;
+            if (paired)
+            {
+                for (int i = 1; i < parts.Length; i += 2)
+                {
+                    int n;
+                    if (!int.TryParse(parts[i].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out n))
+                    {
+                        paired = false;
+                        break;
+                    }
+                }
+            }
+            if (paired)
+            {
+                for (int i = 0; i < parts.Length; i += 2)
+                    list.Add(parts[i].Trim());
+            }
+            else
+            {
+                for (int i = 0; i < parts.Length; i++)
+                    list.Add(parts[i].Trim());
+            }
             return list.ToArray();
         }
 

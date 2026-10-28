@@ -65,6 +65,7 @@ namespace ShaderDIY.Editor
                 slotOrder.Add(hostDoc.slots[i]);
             slotOrder.Sort(CompareSlotEmitOrder);
 
+            bool fxHost = IsFxHost(hostDoc);
             var sbSlots = new StringBuilder();
             for (int i = 0; i < slotOrder.Count; i++)
             {
@@ -91,7 +92,7 @@ namespace ShaderDIY.Editor
                 if (mod.keywords != null)
                     keywords.AddRange(mod.keywords);
 
-                bool emitHlsl = ShouldEmitModuleHlsl(mod);
+                bool emitHlsl = ShouldEmitModuleHlsl(mod, fxHost);
                 if (emitHlsl && !string.IsNullOrEmpty(slot.signature) &&
                     (mod.hlslInclude == null || mod.hlslInclude.IndexOf(ExtractFuncName(slot.signature), StringComparison.Ordinal) < 0))
                 {
@@ -388,7 +389,7 @@ namespace ShaderDIY.Editor
             if (p.IsEnum)
             {
                 if (!wroteEnum)
-                    sb.Append("[").Append(p.type).Append("] ");
+                    sb.Append("[").Append(ExpandEnumAttribute(p.type)).Append("] ");
                 type = "Float";
             }
             sb.Append(p.name).Append(" (\"").Append(p.displayName).Append("\", ").Append(type).Append(") = ").AppendLine(p.defaultValue);
@@ -496,7 +497,7 @@ namespace ShaderDIY.Editor
         static string ComputeHash(string hostPath, Dictionary<string, SdiyDocument> modules, FeatureState f, string hostText)
         {
             var sb = new StringBuilder();
-            sb.Append("v7|");
+            sb.Append("v8|");
             sb.Append(hostPath).Append('|').Append(hostText).Append('|');
             sb.Append(f.cull).Append(f.zwrite).Append(f.queue).Append(f.receiveShadows).Append(f.multiLight).Append(f.engine);
             foreach (var kv in modules)
@@ -568,23 +569,58 @@ namespace ShaderDIY.Editor
                     string.Equals(host.category, "特效", StringComparison.OrdinalIgnoreCase));
         }
 
-        static bool ShouldEmitModuleHlsl(SdiyDocument mod)
+        // Unity MaterialEnumDrawer 要 Name,Value 成对；Enum(A,B) 会报 Failed to create material drawer。
+        static string ExpandEnumAttribute(string type)
         {
-            if (mod == null)
+            if (string.IsNullOrEmpty(type))
+                return "Enum";
+            int a = type.IndexOf('(');
+            int b = type.LastIndexOf(')');
+            if (a < 0 || b <= a)
+                return type;
+            var head = type.Substring(0, a).Trim();
+            var inner = type.Substring(a + 1, b - a - 1);
+            if (inner.IndexOf('.') >= 0)
+                return type;
+            var parts = inner.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return type;
+            bool alreadyPaired = true;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var t = parts[i].Trim();
+                if ((i % 2) == 1)
+                {
+                    int n;
+                    if (!int.TryParse(t, out n))
+                    {
+                        alreadyPaired = false;
+                        break;
+                    }
+                }
+            }
+            if (alreadyPaired && parts.Length % 2 == 0)
+                return type;
+            var sb = new StringBuilder();
+            sb.Append(head).Append('(');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (i > 0)
+                    sb.Append(',');
+                sb.Append(parts[i].Trim()).Append(',').Append(i);
+            }
+            sb.Append(')');
+            return sb.ToString();
+        }
+
+        // 特效 Host 用 #ifdef 调用模块：选「无」时不注入空函数。PBR/卡渲等始终注入（含「无」桩）。
+        static bool ShouldEmitModuleHlsl(SdiyDocument mod, bool fxHost)
+        {
+            if (mod == null || string.IsNullOrEmpty(mod.hlslInclude))
                 return false;
-            if (string.Equals(mod.name, "无", StringComparison.Ordinal))
+            if (fxHost && string.Equals(mod.name, "无", StringComparison.Ordinal))
                 return false;
-            var hlsl = mod.hlslInclude;
-            if (string.IsNullOrEmpty(hlsl))
-                return false;
-            if (hlsl.IndexOf("SAMPLE", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                hlsl.IndexOf("ShaderDIYSample", StringComparison.Ordinal) >= 0 ||
-                hlsl.IndexOf("SampleScene", StringComparison.Ordinal) >= 0 ||
-                hlsl.IndexOf("clip(", StringComparison.Ordinal) >= 0 ||
-                hlsl.IndexOf("pow(", StringComparison.Ordinal) >= 0 ||
-                hlsl.IndexOf("sin(", StringComparison.Ordinal) >= 0)
-                return true;
-            return false;
+            return true;
         }
 
         static int EstimateFxInterpolators(List<string> keywords)

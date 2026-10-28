@@ -6,7 +6,7 @@ Module "世界坐标" Slot="Clip" Category="FX"
         [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
         _ClipNoise ("Clip Noise", 2D) = "gray" {}
 
-        [Enum(Up,Down,Forward,Back,Left,Right)] [Region 3] _ClipAxis ("裁切方向", Enum(上,下,前,后,左,右)) = 0
+        [Region 3] _ClipAxis ("裁切方向", Enum(上,下,前,后,左,右)) = 0
         [Region 3] _ClipPos ("裁切位置", Float) = 0
         [Region 3] _ClipNoiseStrength ("Noise 强度", Range(0,2)) = 0.2
         [Region 3] _ClipEdgeWidth ("边缘光宽度", Range(0.001,2)) = 0.1
