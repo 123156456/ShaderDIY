@@ -47,12 +47,23 @@ namespace ShaderDIY.Editor
                 {
                     ShaderDIYUndo.Record(graph, graph.material, "ShaderDIY 大类");
                     var next = (ShaderDIYCategory)v;
-                    if (next != graph.category)
-                        ShaderDIYGraphFactory.ResetRenderState(graph);
+                    if (next == graph.category)
+                        return;
+                    ModuleRegistry.Invalidate();
+                    ShaderDIYGraphFactory.ResetRenderState(graph);
                     graph.category = next;
+                    graph.lastCompositionHash = "";
+                    graph.lastCompileError = "";
                     var catHosts = ModuleRegistry.Hosts(graph.category);
                     if (catHosts.Count > 0)
                         ShaderDIYGraphFactory.BindHost(graph, catHosts[0]);
+                    else
+                    {
+                        graph.hostPath = "";
+                        graph.hostGuid = "";
+                        graph.hostName = "";
+                        graph.slotChoices.Clear();
+                    }
                 }))
                 changed = true;
 

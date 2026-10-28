@@ -49,7 +49,7 @@ ShaderDIY "ShaderDIY/Toon/脸"
             if (RDotL > 0) {
                 shadowUV.x = 1.0 - shadowUV.x;
             }
-            half faceShadowMap = SAMPLE_TEXTURE2D(_FaceLightMap, sampler_FaceLightMap, shadowUV).r;
+            half faceShadowMap = ShaderDIYSample_FaceLightMap(shadowUV).r;
 
             return 1-faceShadowMap;
         }
@@ -75,7 +75,7 @@ ShaderDIY "ShaderDIY/Toon/脸"
             Light light = GetMainLight();
             float3 lightDir = normalize(light.direction);
             float3 normal = normalize(i.normalWS);
-            float material = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv).a;
+            float material = ShaderDIYSample_LightMap(i.uv).a;
             float faceShadow = GetFaceShadowValue(i.uv, lightDir);
             float rangeMin = 0.5+ _ShadowOffset- _ShadowSmoothness;
             float rangeMax = 0.5+ _ShadowOffset;
@@ -88,8 +88,8 @@ ShaderDIY "ShaderDIY/Toon/脸"
 
             float rampU = smoothstep(rangeMin, rangeMax, faceShadow);
             float rampV = 1.0 - (index + 0.5) * 0.1;
-            float4 rampCol = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(rampU, rampV));
-            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+            float4 rampCol = ShaderDIYSample_RampTex(float2(rampU, rampV));
+            float4 col = ShaderDIYSample_MainTex(i.uv);
             float3 emission = col.rgb * _EmissionIntensity*col.a;
             float fresnel = pow(1 - dot(viewDir, normal), _RimThreshold) * _RimIntensity;
             float3 rimColor = fresnel * _RimColor.rgb;

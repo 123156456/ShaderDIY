@@ -55,14 +55,14 @@ MonoBehaviour:
   - name: EngineCompat
     value: Unity2021
   material: {fileID: 2100000, guid: ae869df9d1a899b42bc5596e677f84a5, type: 2}
-  generatedShader: {fileID: 4800000, guid: 31276ecb3d1af5e42be004b515e741d8, type: 3}
-  lastCompositionHash: 0dea3de126972788a3dcc7e529d9e87d
+  generatedShader: {fileID: 4800000, guid: 79fa51fb024b5434ca89391774b3801f, type: 3}
+  lastCompositionHash: 566f0998a671b58d2e39dc06d9928306
   lastCompileError: 
   lastAluCost: 76
   lastTexCost: 8
   lastInterpolatorCost: 5
   lastVariantEstimate: 8
-  lastCompileMs: 189.1758
+  lastCompileMs: 218.9984
   animKeys: []
   animLength: 4
   animTime: 0

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: DefaultPBR
-  m_Shader: {fileID: 4800000, guid: 31276ecb3d1af5e42be004b515e741d8, type: 3}
+  m_Shader: {fileID: 4800000, guid: 79fa51fb024b5434ca89391774b3801f, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -29,6 +29,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _ClipNoise:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -45,6 +49,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MetalMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -54,6 +62,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -87,6 +99,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Alpha: 1
     - _Anisotropy: 1
     - _BaseMap_Channel: 0
     - _BaseMap_Invert: 0
@@ -97,8 +110,18 @@ Material:
     - _BumpScale: 1
     - _CelBands: 3
     - _CelEdge: 0.05
+    - _ClipAxis: 1
+    - _ClipEdgeWidth: 0.09
+    - _ClipNoiseStrength: 0
+    - _ClipNoise_Channel: 0
+    - _ClipNoise_Invert: 0
+    - _ClipNoise_MipBias: 0
+    - _ClipNoise_USpeed: 0
+    - _ClipNoise_VSpeed: 0
+    - _ClipPos: -0.5
     - _Cutoff: 0.722
     - _DiffuseWrap: 0
+    - _DstBlend: 10
     - _EmissionIntensity: 0.35
     - _EmissionMap_Channel: 0
     - _EmissionMap_Invert: 0
@@ -108,12 +131,21 @@ Material:
     - _FaceLightMap_MipBias: 0
     - _GIIntensity: 1
     - _IBLIntensity: 1
+    - _Intensity: 1.73
     - _LightMap_Channel: 0
     - _LightMap_Invert: 0
     - _LightMap_MipBias: 0
     - _MainTex_Channel: 0
     - _MainTex_Invert: 0
     - _MainTex_MipBias: 0
+    - _MainTex_Rot: 0
+    - _MainTex_USpeed: 0
+    - _MainTex_VSpeed: 0
+    - _MaskTex_Channel: 0
+    - _MaskTex_Invert: 0
+    - _MaskTex_MipBias: 0
+    - _MaskTex_USpeed: 0
+    - _MaskTex_VSpeed: 0
     - _MetalMap_Channel: 0
     - _MetalMap_Invert: 0
     - _MetalMap_MipBias: 0
@@ -126,6 +158,12 @@ Material:
     - _MetallicMap_Invert: 0
     - _MetallicMap_MipBias: 0
     - _MieG: 0.76
+    - _NoiseIntensity: 0.1
+    - _NoiseTex_Channel: 0
+    - _NoiseTex_Invert: 0
+    - _NoiseTex_MipBias: 0
+    - _NoiseTex_USpeed: 0
+    - _NoiseTex_VSpeed: 0
     - _NonMetallicIntensity: 1
     - _NormalMap_Channel: 0
     - _NormalMap_Invert: 0
@@ -138,11 +176,15 @@ Material:
     - _OcclusionMap_Invert: 0
     - _OcclusionMap_MipBias: 0
     - _OcclusionStrength: 1
-    - _OutlineWidth: 0.005
+    - _OutlineWidth: 0.0049
+    - _ParallaxH: 0.5
+    - _ParallaxHeight: 0.05
     - _RampTex_Channel: 0
     - _RampTex_Invert: 0
     - _RampTex_MipBias: 0
+    - _Reverse: 0
     - _RimIntensity: 1
+    - _RimPower: 4.3
     - _RimThreshold: 0.1
     - _Roughness: 0.5
     - _RoughnessMap_Channel: 0
@@ -153,10 +195,12 @@ Material:
     - _ShadowSmoothness: 0.001
     - _Shininess: 32
     - _Smoothness: 0.5
+    - _SoftFade: 1
     - _SpecIntensity: 1
     - _SpecularMap_Channel: 0
     - _SpecularMap_Invert: 0
     - _SpecularMap_MipBias: 0
+    - _SrcBlend: 5
     - _Subsurface: 0
     - _Thickness: 0.71
     - _ThicknessMap_Channel: 0
@@ -166,13 +210,17 @@ Material:
     - _TransDirect: 1
     - _TransNormalDistortion: 0.5
     - _TransScattering: 2
+    - _UseParallax: 0
     m_Colors:
     - _AmbientColor: {r: 0.14999998, g: 0.14999998, b: 0.17999998, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ClipEdgeColor: {r: 0, g: 0.22717306, b: 0.6675393, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DirColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FrontTranslucency: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _MainColor: {r: 1, g: 0, b: 0, a: 1}
+    - _OutlineColor: {r: 0.09224105, g: 1, b: 0, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
     - _Translucency: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

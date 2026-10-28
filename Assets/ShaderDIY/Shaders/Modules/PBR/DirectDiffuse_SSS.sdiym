@@ -78,7 +78,7 @@ Module "SSS" Slot="DirectDiffuse" Category="PBR"
                 for (int x = -SSS_RADIUS; x <= SSS_RADIUS; x++)
                 {
                     float2 uvOffset = ctx.uv + float2(x, y) * stepMM * _SSSBlurWidth;
-                    float3 nTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvOffset));
+                    float3 nTS = UnpackNormal(ShaderDIYSample_NormalMap(uvOffset));
                     float3 nWS = normalize(mul(nTS, TBN));
                     float3 E = (lightColor * saturate(dot(nWS, lightDirWS)) * shadow + SampleSH(nWS)) * (1 - F);
                     float3 E_opp = lightColor * saturate(dot(-nWS, lightDirWS)) * shadow * (1 - F);
@@ -113,7 +113,7 @@ Module "SSS" Slot="DirectDiffuse" Category="PBR"
                 L_surface += SSS_W[k] * Bi;
                 L_through += SSS_W[k] * BiOpp * exp(-d2 / SSS_V[k]);
             }
-            return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, ctx.uv).rgb * (L_surface + L_through);
+            return ShaderDIYSample_MainTex(ctx.uv).rgb * (L_surface + L_through);
         }
     }
 }

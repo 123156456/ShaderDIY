@@ -44,7 +44,7 @@ Module "经验SSS" Slot="LayerSSS" Category="PBR"
 
         float3 EvaluateLayerSSS(ShadingContext ctx)
         {
-            float thickness = SAMPLE_TEXTURE2D(_ThicknessMap, sampler_ThicknessMap, TRANSFORM_TEX(ctx.uv, _MainTex)).r * _Thickness;
+            float thickness = ShaderDIYSample_ThicknessMap(ctx.uv).r * _Thickness;
             float3 lightAtten = ctx.lightColor * ctx.attenuation;
             float3 irradianceSH = ctx.bakedGI;
             float3 backSS = SubsurfaceScatteringNew(ctx.V, ctx.L, ctx.N, lightAtten, irradianceSH);

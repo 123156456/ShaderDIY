@@ -68,10 +68,10 @@ struct ShaderDIYVaryings
 inline half4 ShaderDIY_Swizzle(half4 c, int channel)
 {
     if (channel <= 0) return c;
-    if (channel == 1) return c.r;
-    if (channel == 2) return c.g;
-    if (channel == 3) return c.b;
-    return c.a;
+    if (channel == 1) return c.rrrr;
+    if (channel == 2) return c.gggg;
+    if (channel == 3) return c.bbbb;
+    return c.aaaa;
 }
 
 inline void ShaderDIY_FillLight(inout ShadingContext ctx, half3 L, half3 lightColor, half attenuation)

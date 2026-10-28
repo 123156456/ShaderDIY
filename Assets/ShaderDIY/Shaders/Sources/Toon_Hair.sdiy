@@ -64,13 +64,13 @@ ShaderDIY "ShaderDIY/Toon/头发"
         {
             float3 bitangent = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
             float3x3 TBN = float3x3(i.tangentWS.xyz, bitangent, i.normalWS);
-            float3 nDirTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, i.uv));
+            float3 nDirTS = UnpackNormal(ShaderDIYSample_NormalTex(i.uv));
             float3 nDirWS = normalize(mul(nDirTS, TBN));
 
-            float4 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
+            float4 lightMap = ShaderDIYSample_LightMap(i.uv);
             float ao = lightMap.g;
             float material = lightMap.a;
-            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+            float4 col = ShaderDIYSample_MainTex(i.uv);
 
             int index = 4;
             index = lerp(index, 1, step(0.2, material));
@@ -88,7 +88,7 @@ ShaderDIY "ShaderDIY/Toon/头发"
 
             float3 normalVS = mul((float3x3)UNITY_MATRIX_V, normal);
             float2 matcapUV = 0.5 * normalVS.xy + 0.5;
-            float3 metalMap = SAMPLE_TEXTURE2D(_MetalMap, sampler_MetalMap, matcapUV).rgb;
+            float3 metalMap = ShaderDIYSample_MetalMap(matcapUV).rgb;
 
             float3 metallic = lerp(float3(0, 0, 0), blinn * lightMap.b * col.rgb * metalMap * _MetallicIntensity * lightMap.r, step(0.9, lightMap.r));
             float3 nonMetallic = lerp(blinn * lightMap.b * col.rgb * _NonMetallicIntensity * lightMap.r, float3(0, 0, 0), step(0.9, lightMap.r));
@@ -101,7 +101,7 @@ ShaderDIY "ShaderDIY/Toon/头发"
             float rangeMax = 0.5 + _ShadowOffset;
             float rampU = smoothstep(rangeMin, rangeMax, shadow);
             float rampV = 1.0 - (index + 0.5) * 0.1;
-            float4 rampCol = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(rampU, rampV));
+            float4 rampCol = ShaderDIYSample_RampTex(float2(rampU, rampV));
 
             return float4(rampCol.rgb * col.rgb + specular + emission, 1);
         }

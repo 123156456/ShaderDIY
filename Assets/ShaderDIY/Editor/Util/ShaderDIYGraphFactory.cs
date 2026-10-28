@@ -113,6 +113,8 @@ namespace ShaderDIY.Editor
                 var s = host.document.slots[i];
                 graph.SetSlotModule(s.name, s.defaultModule);
             }
+            graph.lastCompositionHash = "";
+            graph.lastCompileError = "";
             ApplyCategoryDefaults(graph);
         }
 

@@ -389,7 +389,11 @@ namespace ShaderDIY.Editor
             if (p.IsEnum)
             {
                 if (!wroteEnum)
-                    sb.Append("[").Append(ExpandEnumAttribute(p.type)).Append("] ");
+                {
+                    var enumAttr = ExpandEnumAttribute(p.type);
+                    if (!string.IsNullOrEmpty(enumAttr))
+                        sb.Append("[").Append(enumAttr).Append("] ");
+                }
                 type = "Float";
             }
             sb.Append(p.name).Append(" (\"").Append(p.displayName).Append("\", ").Append(type).Append(") = ").AppendLine(p.defaultValue);
@@ -497,7 +501,7 @@ namespace ShaderDIY.Editor
         static string ComputeHash(string hostPath, Dictionary<string, SdiyDocument> modules, FeatureState f, string hostText)
         {
             var sb = new StringBuilder();
-            sb.Append("v8|");
+            sb.Append("v10|");
             sb.Append(hostPath).Append('|').Append(hostText).Append('|');
             sb.Append(f.cull).Append(f.zwrite).Append(f.queue).Append(f.receiveShadows).Append(f.multiLight).Append(f.engine);
             foreach (var kv in modules)
@@ -569,11 +573,11 @@ namespace ShaderDIY.Editor
                     string.Equals(host.category, "特效", StringComparison.OrdinalIgnoreCase));
         }
 
-        // Unity MaterialEnumDrawer 要 Name,Value 成对；Enum(A,B) 会报 Failed to create material drawer。
+        // Unity MaterialEnumDrawer 要 Name,Value 成对。含中文的 Enum 不能写进 ShaderLab（会 Parse error），工坊 UI 自己画下拉。
         static string ExpandEnumAttribute(string type)
         {
             if (string.IsNullOrEmpty(type))
-                return "Enum";
+                return null;
             int a = type.IndexOf('(');
             int b = type.LastIndexOf(')');
             if (a < 0 || b <= a)
@@ -585,21 +589,29 @@ namespace ShaderDIY.Editor
             var parts = inner.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0)
                 return type;
-            bool alreadyPaired = true;
             for (int i = 0; i < parts.Length; i++)
             {
                 var t = parts[i].Trim();
-                if ((i % 2) == 1)
+                for (int c = 0; c < t.Length; c++)
+                {
+                    if (t[c] > 127)
+                        return null;
+                }
+            }
+            bool alreadyPaired = parts.Length % 2 == 0;
+            if (alreadyPaired)
+            {
+                for (int i = 1; i < parts.Length; i += 2)
                 {
                     int n;
-                    if (!int.TryParse(t, out n))
+                    if (!int.TryParse(parts[i].Trim(), out n))
                     {
                         alreadyPaired = false;
                         break;
                     }
                 }
             }
-            if (alreadyPaired && parts.Length % 2 == 0)
+            if (alreadyPaired)
                 return type;
             var sb = new StringBuilder();
             sb.Append(head).Append('(');

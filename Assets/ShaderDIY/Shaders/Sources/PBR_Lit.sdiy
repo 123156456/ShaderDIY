@@ -88,20 +88,20 @@ ShaderDIY "ShaderDIY/PBR/Lit"
             float3 tangentWS = normalize(i.tangentWS.xyz);
             float3 bitangentWS = normalize(cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w * unity_WorldTransformParams.w);
             float3x3 TBN = float3x3(tangentWS, bitangentWS, normalWS);
-            float2 uv = TRANSFORM_TEX(i.uv, _MainTex);
-            float3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uv));
+            float2 uv = i.uv;
+            float3 normalTS = UnpackNormal(ShaderDIYSample_NormalMap(uv));
             float3 nDir = normalize(mul(normalTS, TBN));
             float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.positionWS);
 
-            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+            float4 col = ShaderDIYSample_MainTex(uv);
             #ifndef _LAYER_REFRACTION
             clip(col.a - _Cutoff);
             #endif
-            float metallic = SAMPLE_TEXTURE2D(_MetallicMap, sampler_MetallicMap, uv).r;
-            float roughness = SAMPLE_TEXTURE2D(_RoughnessMap, sampler_RoughnessMap, uv).r;
-            float occlusion = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).r;
-            float3 specularColor = SAMPLE_TEXTURE2D(_SpecularMap, sampler_SpecularMap, uv).rgb;
-            float3 emissionColor = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
+            float metallic = ShaderDIYSample_MetallicMap(uv).r;
+            float roughness = ShaderDIYSample_RoughnessMap(uv).r;
+            float occlusion = ShaderDIYSample_OcclusionMap(uv).r;
+            float3 specularColor = ShaderDIYSample_SpecularMap(uv).rgb;
+            float3 emissionColor = ShaderDIYSample_EmissionMap(uv).rgb * _EmissionColor.rgb;
             float3 mainColor = col.rgb + _Color.rgb;
 
             ShadingContext ctx = (ShadingContext)0;
