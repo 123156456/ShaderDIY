@@ -1,0 +1,24 @@
+Module "菲涅尔" Slot="Rim" Category="FX"
+{
+    Properties
+    {
+        [HDR] [Region 3] _RimColor ("Rim Color", Color) = (1,1,1,1)
+        [Region 3] _RimPower ("Rim Power", Range(0.001,50)) = 4
+        [Region 3] _RimIntensity ("Rim Intensity", Range(0,5)) = 1
+    }
+
+    Cost { ALU = 8 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_RIM }
+    Formula { Rim = (1-N·V)^p · I · RimColor }
+
+    HLSL
+    {
+        float3 EvaluateFXRim(ShaderDIYVaryings i)
+        {
+            float3 nDir = normalize(i.normalWS);
+            float3 vDir = normalize(i.viewDirWS);
+            float fresnel = pow(1.0 - saturate(dot(nDir, vDir)), _RimPower) * _RimIntensity;
+            return fresnel * _RimColor.rgb;
+        }
+    }
+}

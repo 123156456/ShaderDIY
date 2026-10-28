@@ -1,0 +1,12 @@
+Module "无" Slot="Clip" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Clip = off }
+    HLSL
+    {
+        float4 EvaluateFXClip(float3 positionWS, float2 uv, float4 col)
+        {
+            return col;
+        }
+    }
+}

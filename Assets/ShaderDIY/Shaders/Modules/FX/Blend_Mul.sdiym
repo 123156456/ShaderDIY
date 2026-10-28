@@ -1,0 +1,12 @@
+Module "相乘" Slot="Blend" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_BLEND_MUL }
+    Formula { Blend = DstColor Zero }
+    HLSL
+    {
+        void EvaluateFXBlend()
+        {
+        }
+    }
+}

@@ -140,6 +140,15 @@ namespace ShaderDIY.Editor
                 case "LayerSSS": return "SSS";
                 case "LayerParallax": return "视差";
                 case "LayerRefraction": return "折射";
+                case "MainTex": return "颜色贴图";
+                case "Mask": return "遮罩";
+                case "Noise": return "Noise";
+                case "Emission": return "自发光";
+                case "Rim": return "边缘光";
+                case "Outline": return "描边";
+                case "Clip": return "裁切";
+                case "Blend": return "混合";
+                case "Soft": return "软粒子";
                 default: return slot;
             }
         }

@@ -29,6 +29,8 @@ namespace ShaderDIY.Editor
             EnsureFolder(Modules);
             EnsureFolder(Path.Combine(Modules, "PBR").Replace('\\', '/'));
             EnsureFolder(Path.Combine(Modules, "Unlit").Replace('\\', '/'));
+            EnsureFolder(Path.Combine(Modules, "FX").Replace('\\', '/'));
+            EnsureFolder(Path.Combine(Modules, "Atmosphere").Replace('\\', '/'));
             EnsureFolder(Templates);
             EnsureFolder(Library);
             EnsureFolder("Assets/ShaderDIY/Documentation");

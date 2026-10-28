@@ -1,0 +1,12 @@
+Module "无" Slot="MainTex" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Tex = 1 }
+    HLSL
+    {
+        float4 EvaluateFXMain(float2 uv)
+        {
+            return 1;
+        }
+    }
+}

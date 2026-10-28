@@ -113,6 +113,7 @@ namespace ShaderDIY.Editor
                 var s = host.document.slots[i];
                 graph.SetSlotModule(s.name, s.defaultModule);
             }
+            ApplyCategoryDefaults(graph);
         }
 
         public static void ResetRenderState(ShaderDIYGraph graph)
@@ -125,6 +126,20 @@ namespace ShaderDIY.Editor
             graph.SetFeature(ShaderDIYRenderState.KeyReceiveShadows, ShaderDIYRenderState.DefaultReceiveShadows);
             graph.SetFeature(ShaderDIYRenderState.KeyLightingMode, ShaderDIYRenderState.DefaultLighting);
             graph.SetFeature(ShaderDIYRenderState.KeyEngine, ShaderDIYRenderState.DefaultEngine);
+        }
+
+        public static void ApplyCategoryDefaults(ShaderDIYGraph graph)
+        {
+            if (graph == null)
+                return;
+            if (graph.category == ShaderDIYCategory.FX)
+            {
+                graph.SetFeature(ShaderDIYRenderState.KeyQueue, "Transparent");
+                graph.SetFeature(ShaderDIYRenderState.KeyZWrite, "Off");
+                graph.SetFeature(ShaderDIYRenderState.KeyReceiveShadows, "Off");
+                graph.SetFeature(ShaderDIYRenderState.KeyLightingMode, "Single");
+                graph.SetFeature(ShaderDIYRenderState.KeyCull, "Off");
+            }
         }
     }
 }

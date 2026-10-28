@@ -43,6 +43,18 @@ struct ShadingContext
 struct ShaderDIYVaryings
 {
     float4 positionCS : SV_POSITION;
+#ifdef SHADERDIY_FX
+    float2 uv : TEXCOORD0;
+    half4 vertexColor : COLOR;
+#if defined(_FX_CLIP)
+    float3 positionWS : TEXCOORD1;
+#endif
+#if defined(_FX_RIM) || defined(_FX_NOISE)
+    half3 normalWS : TEXCOORD2;
+    half4 tangentWS : TEXCOORD3;
+    half3 viewDirWS : TEXCOORD4;
+#endif
+#else
     float3 positionWS : TEXCOORD0;
     float3 normalWS : TEXCOORD1;
     float4 tangentWS : TEXCOORD2;
@@ -50,6 +62,7 @@ struct ShaderDIYVaryings
     float3 viewDirWS : TEXCOORD4;
     half3 vertexSH : TEXCOORD5;
     half fogFactor : TEXCOORD6;
+#endif
 };
 
 inline half4 ShaderDIY_Swizzle(half4 c, int channel)

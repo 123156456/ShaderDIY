@@ -1,0 +1,24 @@
+Module "软粒子" Slot="Soft" Category="FX"
+{
+    Properties
+    {
+        [Region 3] _SoftFade ("软边距离", Range(0.01, 5)) = 1
+    }
+
+    Cost { ALU = 10 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_SOFT }
+    Formula { a *= saturate((sceneZ-thisZ)/fade) }
+
+    HLSL
+    {
+        float4 EvaluateFXSoft(ShaderDIYVaryings i, float4 col)
+        {
+            float2 screenUV = i.positionCS.xy / _ScaledScreenParams.xy;
+            float sceneZ = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);
+            float thisZ = LinearEyeDepth(i.positionCS.z, _ZBufferParams);
+            float fade = saturate((sceneZ - thisZ) / max(_SoftFade, 1e-4));
+            col.a *= fade;
+            return col;
+        }
+    }
+}

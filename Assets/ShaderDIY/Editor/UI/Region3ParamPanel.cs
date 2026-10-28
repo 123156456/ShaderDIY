@@ -252,6 +252,11 @@ namespace ShaderDIY.Editor
                         graph.SetSlotModule("Transmittance", "查表");
                     if (slot.name == "Light" && names[nsel] == "主光阴影")
                         graph.SetFeature(ShaderDIYRenderState.KeyReceiveShadows, "On");
+                    if (slot.name == "Blend" && names[nsel] != "无")
+                    {
+                        graph.SetFeature(ShaderDIYRenderState.KeyQueue, "Transparent");
+                        graph.SetFeature(ShaderDIYRenderState.KeyZWrite, "Off");
+                    }
                     compile = true;
                 }
             }
@@ -324,7 +329,9 @@ namespace ShaderDIY.Editor
 
             if (p.IsColor)
             {
-                var c = EditorGUI.ColorField(field, mat.GetColor(p.name));
+                bool hdr = p.extraAttributes != null &&
+                           p.extraAttributes.Exists(a => a != null && a.IndexOf("HDR", System.StringComparison.OrdinalIgnoreCase) >= 0);
+                var c = EditorGUI.ColorField(field, GUIContent.none, mat.GetColor(p.name), true, true, hdr);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderDIYUndo.Record(mat, "ShaderDIY " + p.displayName);
@@ -462,6 +469,15 @@ namespace ShaderDIY.Editor
                 case "LayerSSS": return "经验SSS";
                 case "LayerParallax": return "视差";
                 case "LayerRefraction": return "折射";
+                case "MainTex": return "颜色贴图";
+                case "Mask": return "遮罩";
+                case "Noise": return "Noise";
+                case "Emission": return "自发光";
+                case "Rim": return "边缘光";
+                case "Outline": return "描边";
+                case "Clip": return "裁切";
+                case "Blend": return "混合";
+                case "Soft": return "软粒子";
                 default: return slot;
             }
         }

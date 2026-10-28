@@ -94,7 +94,67 @@ namespace ShaderDIY.Editor
                 case "_Roughness":
                     tip = "粗糙度总开关。再乘粗糙度贴图。小=镜子，大=磨砂。"; return true;
                 case "_EmissionColor":
-                    tip = "自发光颜色。和自发光贴图相乘。"; return true;
+                    tip = "自发光颜色。和自发光贴图或遮罩相乘。"; return true;
+                case "_MainColor":
+                    tip = "特效主颜色。再乘顶点色和颜色贴图。"; return true;
+                case "_Intensity":
+                    tip = "特效颜色强度。加法粒子可以拉过 1。"; return true;
+                case "_Alpha":
+                    tip = "整体透明度。再乘贴图和顶点色的 A。"; return true;
+                case "_SoftFade":
+                    tip = "软粒子淡出距离。贴墙、贴地时边缘会虚掉。URP 要开 Depth Texture。"; return true;
+                case "_MainTex_Rot":
+                    tip = "主贴图旋转（度）。绕 UV 中心转。"; return true;
+                case "_MainTex_USpeed":
+                case "_MaskTex_USpeed":
+                case "_NoiseTex_USpeed":
+                case "_EmissionMap_USpeed":
+                case "_EmissionMask_USpeed":
+                case "_ClipNoise_USpeed":
+                    tip = "U 方向流动速度。正负决定左右。"; return true;
+                case "_MainTex_VSpeed":
+                case "_MaskTex_VSpeed":
+                case "_NoiseTex_VSpeed":
+                case "_EmissionMap_VSpeed":
+                case "_EmissionMask_VSpeed":
+                case "_ClipNoise_VSpeed":
+                    tip = "V 方向流动速度。正负决定上下。"; return true;
+                case "_MaskTex":
+                    tip = "遮罩贴图。第 2 区可选通道，乘到颜色和透明度上。"; return true;
+                case "_NoiseTex":
+                    tip = "Noise 贴图。用来扭 UV，也可做视差和方向颜色。"; return true;
+                case "_NoiseIntensity":
+                    tip = "Noise 扰动强度。越大主贴图和遮罩抖得越厉害。"; return true;
+                case "_Reverse":
+                    tip = "反向。打开后 Noise 取 1-x。"; return true;
+                case "_DirColor":
+                    tip = "方向颜色。按 Noise 亮度叠上去，可 HDR。"; return true;
+                case "_UseParallax":
+                    tip = "Noise 视差。用切线空间视线去偏噪声 UV。"; return true;
+                case "_ParallaxH":
+                    tip = "视差高度采样。"; return true;
+                case "_ParallaxHeight":
+                    tip = "视差高度缩放。"; return true;
+                case "_EmissionMask":
+                    tip = "自发光遮罩。用通道乘主色再乘自发光颜色。"; return true;
+                case "_RimPower":
+                    tip = "菲涅尔次幂。越大边缘越窄。"; return true;
+                case "_SrcBlend":
+                    tip = "源混合。和原版 FX 一样，默认 SrcAlpha。"; return true;
+                case "_DstBlend":
+                    tip = "目标混合。和原版 FX 一样，默认 OneMinusSrcColor。"; return true;
+                case "_ClipAxis":
+                    tip = "裁切方向。按物体世界坐标：上/下/前/后/左/右。"; return true;
+                case "_ClipPos":
+                    tip = "裁切平面位置（世界坐标）。"; return true;
+                case "_ClipNoise":
+                    tip = "裁切边缘 Noise。让切开的边不那么齐。"; return true;
+                case "_ClipNoiseStrength":
+                    tip = "裁切 Noise 强度。"; return true;
+                case "_ClipEdgeWidth":
+                    tip = "裁切边缘光宽度。靠裁切面越近越亮。"; return true;
+                case "_ClipEdgeColor":
+                    tip = "裁切边缘光颜色，HDR。"; return true;
                 case "_Occlusion":
                     tip = "环境遮蔽强度。1 用贴图原值，往下调会减轻暗缝。"; return true;
                 case "_Cutoff":
@@ -161,12 +221,6 @@ namespace ShaderDIY.Editor
                     tip = "背光透射颜色。"; return true;
                 case "_FrontTranslucency":
                     tip = "顺光散射颜色。"; return true;
-                case "_NoiseTex":
-                    tip = "内层噪声。视差偏移之后当冰块里面的花纹。"; return true;
-                case "_ParallaxH":
-                    tip = "视差采样高度。"; return true;
-                case "_ParallaxHeight":
-                    tip = "视差偏移有多强。"; return true;
                 case "_InnerColor":
                     tip = "冰块内层颜色。"; return true;
                 case "_InnerColorThicknessPower":
@@ -175,8 +229,6 @@ namespace ShaderDIY.Editor
                     tip = "抓屏 UV 按法线扭多少。"; return true;
                 case "_GrabIntensity":
                     tip = "折射混多少抓屏。正对看得更多后面的东西。"; return true;
-                case "_Alpha":
-                    tip = "整体透明度。掠射会更实。"; return true;
                 default:
                     return false;
             }
@@ -214,7 +266,7 @@ namespace ShaderDIY.Editor
 
         public static string Category
         {
-            get { return "大类。无光照 / PBR / 卡渲 / 自定义 / 大气。换大类会换成该大类的第一套模板。"; }
+            get { return "大类。无光照 / PBR / 卡渲 / 自定义 / 大气 / 特效。换大类会换成该大类的第一套模板。"; }
         }
 
         public static string Host
@@ -374,6 +426,24 @@ namespace ShaderDIY.Editor
                     return "叠在 PBR 上面的内层视差：用切线空间视线去偏噪声 UV，当冰块里面的颜色。";
                 case "LayerRefraction":
                     return "叠在 PBR 上面的抓屏折射。打开后队列会改成透明。URP 要开 Opaque Texture。";
+                case "MainTex":
+                    return "颜色贴图。关掉只用主颜色；打开后可调 Tiling/Offset 和 UV 流动。";
+                case "Mask":
+                    return "遮罩。打开后乘到颜色上，第 2 区可选用哪个通道。";
+                case "Noise":
+                    return "Noise 扰动 UV。可反向、叠方向颜色，也可开视差去偏噪声 UV。";
+                case "Emission":
+                    return "自发光。可选贴图或遮罩，再乘自发光颜色。";
+                case "Rim":
+                    return "边缘光。用菲涅尔 pow(1-N·V)。";
+                case "Outline":
+                    return "描边。打开后多一个正面剔除 Pass，调颜色和宽度。";
+                case "Clip":
+                    return "世界坐标裁切。选上下前后左右，可加边缘 Noise 和 HDR 边缘光。";
+                case "Blend":
+                    return "混合模式。无=不混合；透明=SrcAlpha/OneMinusSrcAlpha；叠加=加法；相乘=正片叠底；自定义=自己选 Src/Dst，和原版 FX 一样。";
+                case "Soft":
+                    return "软粒子。按场景深度把贴边的粒子淡掉。URP 要开 Depth Texture。";
                 default:
                     return slot + "：可替换的光照一块。右边下拉换实现。";
             }
@@ -395,13 +465,22 @@ namespace ShaderDIY.Editor
                 case "LayerSSS": return "经验SSS";
                 case "LayerParallax": return "视差";
                 case "LayerRefraction": return "折射";
+                case "MainTex": return "颜色贴图";
+                case "Mask": return "遮罩";
+                case "Noise": return "Noise";
+                case "Emission": return "自发光";
+                case "Rim": return "边缘光";
+                case "Outline": return "描边";
+                case "Clip": return "裁切";
+                case "Blend": return "混合";
+                case "Soft": return "软粒子";
                 default: return slot;
             }
         }
 
         public static string AddonBar
         {
-            get { return "在现有 PBR 上叠加。点开才会编译进去，关掉就没有。"; }
+            get { return "可选功能。点开才会编译进去，关掉就没有。"; }
         }
 
         public static string Score
@@ -486,7 +565,7 @@ namespace ShaderDIY.Editor
 
         public static string NewCategory
         {
-            get { return "大类，要和第 1 区对得上：PBR / Toon / Unlit / Custom / Atmosphere。卡渲填 Toon，大气填 Atmosphere。"; }
+            get { return "大类，要和第 1 区对得上：PBR / Toon / Unlit / Custom / Atmosphere / FX。卡渲填 Toon，大气填 Atmosphere，特效填 FX。"; }
         }
 
         public static string NewSlot

@@ -1,0 +1,12 @@
+Module "无" Slot="Soft" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Soft = 1 }
+    HLSL
+    {
+        float4 EvaluateFXSoft(ShaderDIYVaryings i, float4 col)
+        {
+            return col;
+        }
+    }
+}

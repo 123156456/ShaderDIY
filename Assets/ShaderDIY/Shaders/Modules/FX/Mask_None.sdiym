@@ -1,0 +1,12 @@
+Module "无" Slot="Mask" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Mask = 1 }
+    HLSL
+    {
+        float EvaluateFXMask(float2 uv)
+        {
+            return 1;
+        }
+    }
+}

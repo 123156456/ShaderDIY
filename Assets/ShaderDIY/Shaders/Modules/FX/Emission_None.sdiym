@@ -1,0 +1,12 @@
+Module "无" Slot="Emission" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { E = 0 }
+    HLSL
+    {
+        float3 EvaluateFXEmission(float2 uv, float4 col)
+        {
+            return 0;
+        }
+    }
+}

@@ -1,0 +1,52 @@
+Module "Noise" Slot="Noise" Category="FX"
+{
+    Properties
+    {
+        [Tab Noise]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _NoiseTex ("Noise", 2D) = "white" {}
+
+        [Region 3] _NoiseTex_USpeed ("U Speed", Float) = 0
+        [Region 3] _NoiseTex_VSpeed ("V Speed", Float) = 0
+        [Region 3] _NoiseIntensity ("Noise Intensity", Range(0,1)) = 0.1
+        [Toggle] [Region 3] _Reverse ("反向", Toggle) = 0
+        [HDR] [Region 3] _DirColor ("方向颜色", Color) = (0,0,0,1)
+        [Toggle] [Region 3] _UseParallax ("视差", Toggle) = 0
+        [Region 3] _ParallaxH ("Parallax Height Sample", Range(0,1)) = 0.5
+        [Region 3] _ParallaxHeight ("Parallax Height Scale", Range(0,0.2)) = 0.05
+    }
+
+    Cost { ALU = 20 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_NOISE }
+    Formula { uv += (n*2-1)·I ; Dir = n · DirColor }
+
+    HLSL
+    {
+        float2 FX_ParallaxOffset(half h, half height, half3 viewDirTS)
+        {
+            h = h * height - height * 0.5;
+            half3 v = normalize(viewDirTS);
+            v.z += 0.42;
+            return h * (v.xy / v.z);
+        }
+
+        void EvaluateFXNoise(inout float2 uv, ShaderDIYVaryings i, inout float3 dirTint)
+        {
+            float2 nUV = uv + _Time.y * float2(_NoiseTex_USpeed, _NoiseTex_VSpeed);
+            UNITY_BRANCH
+            if (_UseParallax > 0.5)
+            {
+                half3 nDir = normalize(i.normalWS);
+                half3 tDir = normalize(i.tangentWS.xyz);
+                half3 bDir = normalize(cross(nDir, tDir) * i.tangentWS.w);
+                nUV += FX_ParallaxOffset(_ParallaxH, _ParallaxHeight, mul(half3x3(tDir, bDir, nDir), normalize(i.viewDirWS)));
+            }
+
+            half4 n = ShaderDIYSample_NoiseTex(nUV);
+            n = lerp(n, 1.0 - n, _Reverse);
+
+            uv += (n.xy * 2.0 - 1.0) * _NoiseIntensity;
+            dirTint = n.r * _DirColor.rgb;
+        }
+    }
+}

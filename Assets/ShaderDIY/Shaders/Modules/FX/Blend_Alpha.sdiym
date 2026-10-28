@@ -1,0 +1,12 @@
+Module "透明" Slot="Blend" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_BLEND_ALPHA }
+    Formula { Blend = SrcAlpha OneMinusSrcAlpha }
+    HLSL
+    {
+        void EvaluateFXBlend()
+        {
+        }
+    }
+}

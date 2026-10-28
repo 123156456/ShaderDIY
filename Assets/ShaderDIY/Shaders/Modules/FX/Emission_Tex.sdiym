@@ -1,0 +1,26 @@
+Module "贴图" Slot="Emission" Category="FX"
+{
+    Properties
+    {
+        [Tab 自发光]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _EmissionMap ("Emission Map", 2D) = "white" {}
+
+        [HDR] [Region 3] _EmissionColor ("Emission Color", Color) = (0,0,0,1)
+        [Region 3] _EmissionMap_USpeed ("U Speed", Float) = 0
+        [Region 3] _EmissionMap_VSpeed ("V Speed", Float) = 0
+    }
+
+    Cost { ALU = 4 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_EMISSION_TEX }
+    Formula { E = Sample · EmissionColor }
+
+    HLSL
+    {
+        float3 EvaluateFXEmission(float2 uv, float4 col)
+        {
+            float2 flowUV = uv + _Time.y * float2(_EmissionMap_USpeed, _EmissionMap_VSpeed);
+            return ShaderDIYSample_EmissionMap(flowUV).rgb * _EmissionColor.rgb;
+        }
+    }
+}

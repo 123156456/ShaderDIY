@@ -1,0 +1,12 @@
+Module "叠加" Slot="Blend" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_BLEND_ADD }
+    Formula { Blend = SrcAlpha One }
+    HLSL
+    {
+        void EvaluateFXBlend()
+        {
+        }
+    }
+}

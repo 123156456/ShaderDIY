@@ -1,0 +1,19 @@
+Module "自定义" Slot="Blend" Category="FX"
+{
+    Properties
+    {
+        [Enum(UnityEngine.Rendering.BlendMode)] [Region 3] _SrcBlend ("Src Blend", Enum(Zero,One,DstColor,SrcColor,OneMinusDstColor,SrcAlpha,OneMinusSrcAlpha,DstAlpha,OneMinusDstAlpha,SrcAlphaSaturate,OneMinusSrcColor)) = 5
+        [Enum(UnityEngine.Rendering.BlendMode)] [Region 3] _DstBlend ("Dst Blend", Enum(Zero,One,DstColor,SrcColor,OneMinusDstColor,SrcAlpha,OneMinusSrcAlpha,DstAlpha,OneMinusDstAlpha,SrcAlphaSaturate,OneMinusSrcColor)) = 10
+    }
+
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_BLEND_CUSTOM }
+    Formula { Blend = [_SrcBlend] [_DstBlend] }
+
+    HLSL
+    {
+        void EvaluateFXBlend()
+        {
+        }
+    }
+}

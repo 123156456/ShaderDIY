@@ -1,0 +1,27 @@
+Module "遮罩" Slot="Emission" Category="FX"
+{
+    Properties
+    {
+        [Tab 自发光遮罩]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _EmissionMask ("Emission Mask", 2D) = "white" {}
+
+        [HDR] [Region 3] _EmissionColor ("Emission Color", Color) = (1,1,1,1)
+        [Region 3] _EmissionMask_USpeed ("U Speed", Float) = 0
+        [Region 3] _EmissionMask_VSpeed ("V Speed", Float) = 0
+    }
+
+    Cost { ALU = 4 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_EMISSION_MASK }
+    Formula { E = col · Mask · EmissionColor }
+
+    HLSL
+    {
+        float3 EvaluateFXEmission(float2 uv, float4 col)
+        {
+            float2 flowUV = uv + _Time.y * float2(_EmissionMask_USpeed, _EmissionMask_VSpeed);
+            float m = ShaderDIYSample_EmissionMask(flowUV).r;
+            return col.rgb * m * _EmissionColor.rgb;
+        }
+    }
+}

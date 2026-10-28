@@ -1,0 +1,11 @@
+Module "无" Slot="Outline" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Outline = 0 }
+    HLSL
+    {
+        void EvaluateFXOutline()
+        {
+        }
+    }
+}

@@ -1,0 +1,12 @@
+Module "无" Slot="Rim" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Rim = 0 }
+    HLSL
+    {
+        float3 EvaluateFXRim(ShaderDIYVaryings i)
+        {
+            return 0;
+        }
+    }
+}

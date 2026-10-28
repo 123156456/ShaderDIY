@@ -1,0 +1,31 @@
+Module "颜色贴图" Slot="MainTex" Category="FX"
+{
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MainTex ("Main Texture", 2D) = "white" {}
+
+        [Region 3] _MainTex_USpeed ("U Speed", Float) = 0
+        [Region 3] _MainTex_VSpeed ("V Speed", Float) = 0
+        [Region 3] _MainTex_Rot ("旋转", Range(0,360)) = 0
+    }
+
+    Cost { ALU = 8 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_MAINTEX }
+    Formula { Tex = Sample(rot(uv) + t·speed) }
+
+    HLSL
+    {
+        float4 EvaluateFXMain(float2 uv)
+        {
+            float rad = _MainTex_Rot * 0.01745329251;
+            float s = sin(rad);
+            float c = cos(rad);
+            float2 p = uv - 0.5;
+            uv = float2(p.x * c - p.y * s, p.x * s + p.y * c) + 0.5;
+            float2 flowUV = uv + _Time.y * float2(_MainTex_USpeed, _MainTex_VSpeed);
+            return ShaderDIYSample_MainTex(flowUV);
+        }
+    }
+}

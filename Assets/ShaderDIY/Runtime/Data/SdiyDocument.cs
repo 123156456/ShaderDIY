@@ -137,6 +137,9 @@ namespace ShaderDIY
                     string.Equals(category, "大气", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(category, "大气散射", StringComparison.OrdinalIgnoreCase))
                     return ShaderDIYCategory.Atmosphere;
+                if (string.Equals(category, "FX", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(category, "特效", StringComparison.OrdinalIgnoreCase))
+                    return ShaderDIYCategory.FX;
                 return ShaderDIYCategory.Custom;
             }
         }

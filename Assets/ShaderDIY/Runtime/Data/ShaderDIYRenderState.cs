@@ -19,7 +19,7 @@ namespace ShaderDIY
         public const string DefaultLighting = "Multi";
         public const string DefaultEngine = "Unity2021";
 
-        public static readonly string[] CategoryLabels = { "无光照", "PBR", "卡渲", "自定义", "大气" };
+        public static readonly string[] CategoryLabels = { "无光照", "PBR", "卡渲", "自定义", "大气", "特效" };
         public static readonly string[] CullLabels = { "正面", "背面", "双面" };
         public static readonly string[] CullValues = { "Back", "Front", "Off" };
         public static readonly string[] QueueLabels = { "不透明", "镂空", "透明" };

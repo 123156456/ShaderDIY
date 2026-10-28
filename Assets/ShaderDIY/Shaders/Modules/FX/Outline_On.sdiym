@@ -1,0 +1,19 @@
+Module "描边" Slot="Outline" Category="FX"
+{
+    Properties
+    {
+        [Region 3] _OutlineWidth ("Outline Width", Range(0,0.03)) = 0.005
+        [Region 3] _OutlineColor ("Outline Color", Color) = (0,0,0,1)
+    }
+
+    Cost { ALU = 4 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_OUTLINE }
+    Formula { Outline = extrude · OutlineColor }
+
+    HLSL
+    {
+        void EvaluateFXOutline()
+        {
+        }
+    }
+}

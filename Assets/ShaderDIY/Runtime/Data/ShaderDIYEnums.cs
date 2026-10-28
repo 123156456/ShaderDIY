@@ -17,7 +17,8 @@ namespace ShaderDIY
         PBR = 1,
         Toon = 2,
         Custom = 3,
-        Atmosphere = 4
+        Atmosphere = 4,
+        FX = 5
     }
 
     public enum LightingMode

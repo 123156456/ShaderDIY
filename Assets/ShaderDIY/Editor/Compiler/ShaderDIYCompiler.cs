@@ -91,25 +91,34 @@ namespace ShaderDIY.Editor
                 if (mod.keywords != null)
                     keywords.AddRange(mod.keywords);
 
-                if (!string.IsNullOrEmpty(slot.signature) &&
+                bool emitHlsl = ShouldEmitModuleHlsl(mod);
+                if (emitHlsl && !string.IsNullOrEmpty(slot.signature) &&
                     (mod.hlslInclude == null || mod.hlslInclude.IndexOf(ExtractFuncName(slot.signature), StringComparison.Ordinal) < 0))
                 {
                     graph.lastCompileError = "模块 " + mod.name + " 未实现签名 " + slot.signature;
                     EditorUtility.SetDirty(graph);
                     return false;
                 }
-                sbSlots.AppendLine("// ---- SLOT " + slot.name + " = " + mod.name + " ----");
-                sbSlots.AppendLine(mod.hlslInclude ?? "");
-                sbSlots.AppendLine();
+                if (emitHlsl)
+                {
+                    sbSlots.AppendLine("// ---- SLOT " + slot.name + " = " + mod.name + " ----");
+                    sbSlots.AppendLine(mod.hlslInclude ?? "");
+                    sbSlots.AppendLine();
+                }
             }
 
             tex += CountTextures(mergedProps);
             var features = ResolveFeatures(graph, hostDoc);
             int variants = 1;
-            if (features.receiveShadows)
-                variants *= 4;
-            if (features.multiLight)
-                variants *= 2;
+            bool fx = IsFxHost(hostDoc);
+            if (!fx)
+            {
+                if (features.receiveShadows)
+                    variants *= 4;
+                if (features.multiLight)
+                    variants *= 2;
+            }
+            interp = fx ? EstimateFxInterpolators(keywords) : interp;
 
             var hash = ComputeHash(host.sourcePath, modules, features, host.sourceText);
             if (!force && graph.lastCompositionHash == hash && graph.generatedShader != null && string.IsNullOrEmpty(graph.lastCompileError))
@@ -232,29 +241,34 @@ namespace ShaderDIY.Editor
             sb.Append("\" \"Queue\"=\"").Append(f.queue).AppendLine("\" }");
             sb.Append("        Cull ").Append(f.cull).AppendLine();
             sb.Append("        ZWrite ").Append(f.zwrite ? "On" : "Off").AppendLine();
-            if (f.transparent)
-                sb.AppendLine("        Blend SrcAlpha OneMinusSrcAlpha");
 
             sb.AppendLine("        Pass");
             sb.AppendLine("        {");
             sb.AppendLine("            Name \"ForwardLit\"");
             sb.AppendLine("            Tags { \"LightMode\"=\"UniversalForward\" }");
+            AppendBlend(sb, props, keywords, f);
             sb.AppendLine("            HLSLPROGRAM");
-            sb.AppendLine("            #pragma target 3.5");
+            bool fx = IsFxHost(host);
+            sb.AppendLine(fx ? "            #pragma target 3.0" : "            #pragma target 3.5");
             sb.AppendLine("            #pragma vertex Vert");
             sb.AppendLine("            #pragma fragment Frag");
-            if (f.receiveShadows)
+            if (!fx)
             {
-                sb.AppendLine("            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE");
-                sb.AppendLine("            #pragma multi_compile_fragment _ _SHADOWS_SOFT");
+                if (f.receiveShadows)
+                {
+                    sb.AppendLine("            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE");
+                    sb.AppendLine("            #pragma multi_compile_fragment _ _SHADOWS_SOFT");
+                }
+                if (f.multiLight)
+                    sb.AppendLine("            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS");
+                sb.AppendLine("            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING");
+                sb.AppendLine("            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION");
+                sb.AppendLine("            #pragma multi_compile_fog");
+                sb.AppendLine("            #define SHADERDIY_RECEIVE_SHADOWS " + (f.receiveShadows ? "1" : "0"));
+                sb.AppendLine("            #define SHADERDIY_MULTI_LIGHT " + (f.multiLight ? "1" : "0"));
             }
-            if (f.multiLight)
-                sb.AppendLine("            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS");
-            sb.AppendLine("            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING");
-            sb.AppendLine("            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION");
-            sb.AppendLine("            #pragma multi_compile_fog");
-            sb.AppendLine("            #define SHADERDIY_RECEIVE_SHADOWS " + (f.receiveShadows ? "1" : "0"));
-            sb.AppendLine("            #define SHADERDIY_MULTI_LIGHT " + (f.multiLight ? "1" : "0"));
+            else
+                sb.AppendLine("            #define SHADERDIY_FX 1");
             sb.AppendLine("            #define SHADERDIY_" + ShaderDIYRenderState.ToUrpDefine(f.engine) + " 1");
             sb.AppendLine("            #define SHADERDIY_" + SanitizeIdent(f.engine) + " 1");
             for (int i = 0; i < keywords.Count; i++)
@@ -263,10 +277,15 @@ namespace ShaderDIY.Editor
                     sb.AppendLine("            #define " + keywords[i] + " 1");
             }
             sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"");
-            sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl\"");
-            sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"");
+            if (!fx)
+            {
+                sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl\"");
+                sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"");
+            }
             if (HasKeyword(keywords, "_LAYER_REFRACTION"))
                 sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl\"");
+            if (HasKeyword(keywords, "_FX_SOFT"))
+                sb.AppendLine("            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl\"");
             sb.AppendLine("            #include \"" + ShaderDIYPaths.GeneratedRelativeInclude + "\"");
             sb.AppendLine("            CBUFFER_START(UnityPerMaterial)");
             for (int i = 0; i < props.Count; i++)
@@ -352,16 +371,26 @@ namespace ShaderDIY.Editor
             if (p == null || p.isFeature)
                 return;
             sb.Append("        ");
+            bool wroteEnum = false;
             if (p.extraAttributes != null)
             {
                 for (int i = 0; i < p.extraAttributes.Count; i++)
+                {
                     sb.Append("[").Append(p.extraAttributes[i]).Append("] ");
+                    if (p.extraAttributes[i] != null &&
+                        p.extraAttributes[i].StartsWith("Enum", StringComparison.OrdinalIgnoreCase))
+                        wroteEnum = true;
+                }
             }
             var type = p.type;
             if (p.IsToggle)
                 type = "Float";
             if (p.IsEnum)
+            {
+                if (!wroteEnum)
+                    sb.Append("[").Append(p.type).Append("] ");
                 type = "Float";
+            }
             sb.Append(p.name).Append(" (\"").Append(p.displayName).Append("\", ").Append(type).Append(") = ").AppendLine(p.defaultValue);
             if (p.IsTexture)
             {
@@ -532,6 +561,73 @@ namespace ShaderDIY.Editor
             return string.CompareOrdinal(a != null ? a.name : "", b != null ? b.name : "");
         }
 
+        static bool IsFxHost(SdiyDocument host)
+        {
+            return host != null &&
+                   (string.Equals(host.category, "FX", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(host.category, "特效", StringComparison.OrdinalIgnoreCase));
+        }
+
+        static bool ShouldEmitModuleHlsl(SdiyDocument mod)
+        {
+            if (mod == null)
+                return false;
+            if (string.Equals(mod.name, "无", StringComparison.Ordinal))
+                return false;
+            var hlsl = mod.hlslInclude;
+            if (string.IsNullOrEmpty(hlsl))
+                return false;
+            if (hlsl.IndexOf("SAMPLE", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                hlsl.IndexOf("ShaderDIYSample", StringComparison.Ordinal) >= 0 ||
+                hlsl.IndexOf("SampleScene", StringComparison.Ordinal) >= 0 ||
+                hlsl.IndexOf("clip(", StringComparison.Ordinal) >= 0 ||
+                hlsl.IndexOf("pow(", StringComparison.Ordinal) >= 0 ||
+                hlsl.IndexOf("sin(", StringComparison.Ordinal) >= 0)
+                return true;
+            return false;
+        }
+
+        static int EstimateFxInterpolators(List<string> keywords)
+        {
+            int n = 2;
+            if (HasKeyword(keywords, "_FX_CLIP"))
+                n += 1;
+            if (HasKeyword(keywords, "_FX_RIM") || HasKeyword(keywords, "_FX_NOISE"))
+                n += 3;
+            return n;
+        }
+
+        static void AppendBlend(StringBuilder sb, List<SdiyProperty> props, List<string> keywords, FeatureState f)
+        {
+            if (HasKeyword(keywords, "_FX_BLEND_OFF"))
+                sb.AppendLine("            Blend Off");
+            else if (HasKeyword(keywords, "_FX_BLEND_ADD"))
+                sb.AppendLine("            Blend SrcAlpha One");
+            else if (HasKeyword(keywords, "_FX_BLEND_MUL"))
+                sb.AppendLine("            Blend DstColor Zero");
+            else if (HasKeyword(keywords, "_FX_BLEND_CUSTOM") &&
+                     HasProp(props, "_SrcBlend") && HasProp(props, "_DstBlend"))
+                sb.AppendLine("            Blend [_SrcBlend] [_DstBlend]");
+            else if (HasKeyword(keywords, "_FX_BLEND_ALPHA"))
+                sb.AppendLine("            Blend SrcAlpha OneMinusSrcAlpha");
+            else if (HasProp(props, "_SrcBlend") && HasProp(props, "_DstBlend"))
+                sb.AppendLine("            Blend [_SrcBlend] [_DstBlend]");
+            else if (f.transparent)
+                sb.AppendLine("            Blend SrcAlpha OneMinusSrcAlpha");
+        }
+
+        static bool HasProp(List<SdiyProperty> props, string name)
+        {
+            if (props == null || string.IsNullOrEmpty(name))
+                return false;
+            for (int i = 0; i < props.Count; i++)
+            {
+                if (props[i] != null && props[i].name == name)
+                    return true;
+            }
+            return false;
+        }
+
         static bool HasKeyword(List<string> keywords, string name)
         {
             if (keywords == null || string.IsNullOrEmpty(name))
@@ -556,6 +652,20 @@ namespace ShaderDIY.Editor
                 return 2;
             if (s.name == "InScattering")
                 return 3;
+            if (s.name == "Noise")
+                return 4;
+            if (s.name == "MainTex")
+                return 5;
+            if (s.name == "Mask")
+                return 6;
+            if (s.name == "Emission")
+                return 7;
+            if (s.name == "Rim")
+                return 8;
+            if (s.name == "Clip")
+                return 9;
+            if (s.name == "Soft")
+                return 11;
             return 10;
         }
 

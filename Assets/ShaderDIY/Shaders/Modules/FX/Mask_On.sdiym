@@ -1,0 +1,25 @@
+Module "遮罩" Slot="Mask" Category="FX"
+{
+    Properties
+    {
+        [Tab 遮罩]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MaskTex ("Mask", 2D) = "white" {}
+
+        [Region 3] _MaskTex_USpeed ("U Speed", Float) = 0
+        [Region 3] _MaskTex_VSpeed ("V Speed", Float) = 0
+    }
+
+    Cost { ALU = 4 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_MASK }
+    Formula { Mask = Sample(channel) }
+
+    HLSL
+    {
+        float EvaluateFXMask(float2 uv)
+        {
+            float2 flowUV = uv + _Time.y * float2(_MaskTex_USpeed, _MaskTex_VSpeed);
+            return ShaderDIYSample_MaskTex(flowUV).r;
+        }
+    }
+}

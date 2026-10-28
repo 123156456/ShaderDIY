@@ -1,0 +1,38 @@
+Module "世界坐标" Slot="Clip" Category="FX"
+{
+    Properties
+    {
+        [Tab 裁切Noise]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _ClipNoise ("Clip Noise", 2D) = "gray" {}
+
+        [Enum(Up,Down,Forward,Back,Left,Right)] [Region 3] _ClipAxis ("裁切方向", Enum(上,下,前,后,左,右)) = 0
+        [Region 3] _ClipPos ("裁切位置", Float) = 0
+        [Region 3] _ClipNoiseStrength ("Noise 强度", Range(0,2)) = 0.2
+        [Region 3] _ClipEdgeWidth ("边缘光宽度", Range(0.001,2)) = 0.1
+        [HDR] [Region 3] _ClipEdgeColor ("边缘光颜色", Color) = (1,2,4,1)
+        [Region 3] _ClipNoise_USpeed ("U Speed", Float) = 0
+        [Region 3] _ClipNoise_VSpeed ("V Speed", Float) = 0
+    }
+
+    Cost { ALU = 16 Texture = 1 Interpolator = 0 }
+    Keywords { _FX_CLIP }
+    Formula { clip(worldAxis - pos + noise) ; edge HDR }
+
+    HLSL
+    {
+        float4 EvaluateFXClip(float3 positionWS, float2 uv, float4 col)
+        {
+            int axis = (int)_ClipAxis;
+            float3 dir = axis < 2 ? float3(0, 1, 0) : (axis < 4 ? float3(0, 0, 1) : float3(1, 0, 0));
+            float sgn = (axis == 1 || axis == 3 || axis == 4) ? -1.0 : 1.0;
+            float2 nUV = uv + _Time.y * float2(_ClipNoise_USpeed, _ClipNoise_VSpeed);
+            float noise = ShaderDIYSample_ClipNoise(nUV).r;
+            float keep = -((dot(positionWS, dir) - _ClipPos) * sgn - (noise * 2.0 - 1.0) * _ClipNoiseStrength);
+            clip(keep);
+            float edge = 1.0 - saturate(keep / max(_ClipEdgeWidth, 1e-5));
+            col.rgb += edge * _ClipEdgeColor.rgb;
+            return col;
+        }
+    }
+}

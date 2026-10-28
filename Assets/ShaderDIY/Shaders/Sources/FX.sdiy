@@ -1,0 +1,96 @@
+ShaderDIY "ShaderDIY/FX/Unlit"
+{
+    Meta
+    {
+        Category = FX
+        Pipeline = URP
+        Description = "特效 Unlit：关掉的模块不进 Shader，无 Lighting / 无雾变体 / 插值按需。"
+        CompanionScripts =
+    }
+
+    Properties
+    {
+        [HDR] [Region 3] _MainColor ("Main Color", Color) = (1,1,1,1)
+        [Region 3] _Intensity ("强度", Range(0,8)) = 1
+        [Region 3] _Alpha ("透明度", Range(0,1)) = 1
+    }
+
+    Formula
+    {
+        C = vertCol · MainColor · Tex · Mask · I
+    }
+
+    [SLOT Blend Default="透明" Signature="void EvaluateFXBlend()"]
+    [SLOT Noise Default="无" Kind="Addon" Signature="void EvaluateFXNoise(inout float2 uv, ShaderDIYVaryings i, inout float3 dirTint)"]
+    [SLOT MainTex Default="颜色贴图" Kind="Addon" Signature="float4 EvaluateFXMain(float2 uv)"]
+    [SLOT Mask Default="无" Kind="Addon" Signature="float EvaluateFXMask(float2 uv)"]
+    [SLOT Emission Default="无" Signature="float3 EvaluateFXEmission(float2 uv, float4 col)"]
+    [SLOT Rim Default="无" Kind="Addon" Signature="float3 EvaluateFXRim(ShaderDIYVaryings i)"]
+    [SLOT Soft Default="无" Kind="Addon" Signature="float4 EvaluateFXSoft(ShaderDIYVaryings i, float4 col)"]
+    [SLOT Outline Default="无" Kind="Addon" Signature="void EvaluateFXOutline()"]
+    [SLOT Clip Default="无" Kind="Addon" Signature="float4 EvaluateFXClip(float3 positionWS, float2 uv, float4 col)"]
+
+    HLSLINCLUDE
+    {
+        // #SLOT_INJECT
+
+        ShaderDIYVaryings Vert(
+            float4 positionOS : POSITION,
+            float2 uv : TEXCOORD0,
+            half4 color : COLOR
+#if defined(_FX_RIM) || defined(_FX_NOISE)
+            , float3 normalOS : NORMAL
+            , float4 tangentOS : TANGENT
+#endif
+            )
+        {
+            ShaderDIYVaryings o;
+            o.positionCS = TransformObjectToHClip(positionOS.xyz);
+            o.uv = uv;
+            o.vertexColor = color;
+#if defined(_FX_CLIP)
+            o.positionWS = TransformObjectToWorld(positionOS.xyz);
+#endif
+#if defined(_FX_RIM) || defined(_FX_NOISE)
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = half4(TransformObjectToWorldDir(tangentOS.xyz), tangentOS.w);
+            o.viewDirWS = normalize(_WorldSpaceCameraPos.xyz - TransformObjectToWorld(positionOS.xyz));
+#endif
+            return o;
+        }
+
+        half4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            float2 uv = i.uv;
+            float3 dirTint = 0;
+#ifdef _FX_NOISE
+            EvaluateFXNoise(uv, i, dirTint);
+#endif
+
+            half4 col = _MainColor * i.vertexColor;
+#ifdef _FX_MAINTEX
+            col *= EvaluateFXMain(uv);
+#endif
+            col.rgb *= _Intensity;
+            col.a *= _Alpha;
+            col.rgb += dirTint;
+
+#ifdef _FX_MASK
+            col *= EvaluateFXMask(uv);
+#endif
+#if defined(_FX_EMISSION_TEX) || defined(_FX_EMISSION_MASK)
+            col.rgb += EvaluateFXEmission(uv, col);
+#endif
+#ifdef _FX_RIM
+            col.rgb += EvaluateFXRim(i);
+#endif
+#ifdef _FX_CLIP
+            col = EvaluateFXClip(i.positionWS, uv, col);
+#endif
+#ifdef _FX_SOFT
+            col = EvaluateFXSoft(i, col);
+#endif
+            return col;
+        }
+    }
+}

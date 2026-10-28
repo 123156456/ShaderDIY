@@ -1,0 +1,13 @@
+Module "无" Slot="Noise" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Formula { Noise = 0 }
+    HLSL
+    {
+        void EvaluateFXNoise(inout float2 uv, ShaderDIYVaryings i, inout float3 dirTint)
+        {
+            uv += i.uv * 0;
+            dirTint += i.positionWS * 0;
+        }
+    }
+}

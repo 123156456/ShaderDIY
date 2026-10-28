@@ -1,0 +1,12 @@
+Module "无" Slot="Blend" Category="FX"
+{
+    Cost { ALU = 0 Texture = 0 Interpolator = 0 }
+    Keywords { _FX_BLEND_OFF }
+    Formula { Blend = Off }
+    HLSL
+    {
+        void EvaluateFXBlend()
+        {
+        }
+    }
+}

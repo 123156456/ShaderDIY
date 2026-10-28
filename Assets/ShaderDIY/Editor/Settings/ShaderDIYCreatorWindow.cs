@@ -22,6 +22,15 @@ namespace ShaderDIY.Editor
             "LayerSSS",
             "LayerParallax",
             "LayerRefraction",
+            "MainTex",
+            "Mask",
+            "Noise",
+            "Emission",
+            "Rim",
+            "Outline",
+            "Clip",
+            "Blend",
+            "Soft",
             "CustomTerm"
         };
 
@@ -238,6 +247,15 @@ namespace ShaderDIY.Editor
                 case "LayerSSS": return "float3 EvaluateLayerSSS(ShadingContext ctx)";
                 case "LayerParallax": return "float3 EvaluateLayerParallax(ShadingContext ctx)";
                 case "LayerRefraction": return "float4 EvaluateLayerRefraction(ShadingContext ctx, float3 result)";
+                case "MainTex": return "float4 EvaluateFXMain(float2 uv)";
+                case "Mask": return "float EvaluateFXMask(float2 uv)";
+                case "Noise": return "void EvaluateFXNoise(inout float2 uv, ShaderDIYVaryings i, inout float3 dirTint)";
+                case "Emission": return "float3 EvaluateFXEmission(float2 uv, float4 col)";
+                case "Rim": return "float3 EvaluateFXRim(ShaderDIYVaryings i)";
+                case "Outline": return "void EvaluateFXOutline()";
+                case "Clip": return "float4 EvaluateFXClip(float3 positionWS, float2 uv, float4 col)";
+                case "Blend": return "void EvaluateFXBlend()";
+                case "Soft": return "float4 EvaluateFXSoft(ShaderDIYVaryings i, float4 col)";
                 default: return "float3 Evaluate" + Ident(slot) + "(ShadingContext ctx)";
             }
         }
