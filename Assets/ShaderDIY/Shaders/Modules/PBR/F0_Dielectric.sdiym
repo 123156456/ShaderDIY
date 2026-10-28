@@ -1,0 +1,22 @@
+Module "Dielectric04" Slot="F0" Category="PBR"
+{
+    Cost
+    {
+        ALU = 2
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        F0 = lerp(0.04, albedo, metallic)
+    }
+
+    HLSL
+    {
+        float3 EvaluateF0(ShadingContext ctx)
+        {
+            return lerp(float3(0.04, 0.04, 0.04), ctx.albedo, ctx.metallic);
+        }
+    }
+}

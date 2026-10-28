@@ -1,0 +1,39 @@
+Module "Disney" Slot="DirectDiffuse" Category="PBR"
+{
+    Properties
+    {
+        [Region 3] _Subsurface ("次表面", Range(0,1)) = 0
+    }
+
+    Cost
+    {
+        ALU = 18
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _DIFFUSE_DISNEY
+    }
+
+    Formula
+    {
+        Dd = ρ(1-m) · Fd(N·L,N·V,rough) · (N·L) · Light
+    }
+
+    HLSL
+    {
+        half3 EvaluateDirectDiffuse(ShadingContext ctx)
+        {
+            half fd90 = 0.5h + 2.0h * ctx.VdotH * ctx.VdotH * ctx.perceptualRoughness;
+            half lightScatter = 1.0h + (fd90 - 1.0h) * pow(1.0h - ctx.NdotL, 5);
+            half viewScatter  = 1.0h + (fd90 - 1.0h) * pow(1.0h - ctx.NdotV, 5);
+            half3 diffuse = ctx.albedo * (1.0h - ctx.metallic);
+            half ss = _Subsurface;
+            half3 result = diffuse * lightScatter * viewScatter;
+            result = lerp(result, diffuse, ss * 0.5h);
+            return result * ctx.lightColor * (ctx.NdotL * ctx.attenuation);
+        }
+    }
+}

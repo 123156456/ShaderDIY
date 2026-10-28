@@ -1,0 +1,119 @@
+Module "SSS" Slot="DirectDiffuse" Category="PBR"
+{
+    Properties
+    {
+        [Region 3] _SSSBlurWidth ("SSS Blur Width", Range(0, 0.01)) = 0.002
+        [Region 3] _Thickness ("SSS Thickness (mm)", Range(0.01, 5)) = 1.0
+    }
+
+    Cost
+    {
+        ALU = 80
+        Texture = 8
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _DIFFUSE_SSS
+    }
+
+    Formula
+    {
+        Dd+Id = albedo · (L_surface + L_through)    G2D 高斯卷积 6 lobe
+    }
+
+    HLSL
+    {
+        #define SSS_RADIUS 3
+
+        float Gaussian(float x, float sigma)
+        {
+            return exp(-(x * x) / (2.0 * sigma * sigma));
+        }
+
+        static const float SSS_V[6] = { 0.0064, 0.0484, 0.187, 0.567, 1.99, 7.41 };
+        static const float3 SSS_W[6] =
+        {
+            float3(0.233, 0.455, 0.649),
+            float3(0.100, 0.336, 0.344),
+            float3(0.118, 0.198, 0.000),
+            float3(0.113, 0.007, 0.007),
+            float3(0.358, 0.004, 0.000),
+            float3(0.078, 0.000, 0.000)
+        };
+
+        float3 EvaluateDirectDiffuse(ShadingContext ctx)
+        {
+            float3 lightColor = ctx.lightColor;
+            float3 lightDirWS = ctx.L;
+            float shadow = ctx.attenuation;
+            float3 F = EvaluateF(ctx);
+            float3x3 TBN = float3x3(ctx.T, ctx.B, ctx.Ng);
+
+            float stepMM = 3.0 * sqrt(SSS_V[5]) / SSS_RADIUS;
+            float3 B[6];
+            float3 B_back[6];
+            float wySum[6];
+            int k;
+            [unroll]
+            for (k = 0; k < 6; k++)
+            {
+                B[k] = 0;
+                B_back[k] = 0;
+                wySum[k] = 0;
+            }
+            for (int y = -SSS_RADIUS; y <= SSS_RADIUS; y++)
+            {
+                float3 E_x[6];
+                float3 E_x_back[6];
+                float wxSum[6];
+                [unroll]
+                for (k = 0; k < 6; k++)
+                {
+                    E_x[k] = 0;
+                    E_x_back[k] = 0;
+                    wxSum[k] = 0;
+                }
+                for (int x = -SSS_RADIUS; x <= SSS_RADIUS; x++)
+                {
+                    float2 uvOffset = ctx.uv + float2(x, y) * stepMM * _SSSBlurWidth;
+                    float3 nTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uvOffset));
+                    float3 nWS = normalize(mul(nTS, TBN));
+                    float3 E = (lightColor * saturate(dot(nWS, lightDirWS)) * shadow + SampleSH(nWS)) * (1 - F);
+                    float3 E_opp = lightColor * saturate(dot(-nWS, lightDirWS)) * shadow * (1 - F);
+                    [unroll]
+                    for (k = 0; k < 6; k++)
+                    {
+                        float wx = Gaussian(x * stepMM, sqrt(SSS_V[k]));
+                        E_x[k] += E * wx;
+                        E_x_back[k] += E_opp * wx;
+                        wxSum[k] += wx;
+                    }
+                }
+                [unroll]
+                for (k = 0; k < 6; k++)
+                {
+                    float wy = Gaussian(y * stepMM, sqrt(SSS_V[k]));
+                    B[k] += E_x[k] / wxSum[k] * wy;
+                    B_back[k] += E_x_back[k] / wxSum[k] * wy;
+                    wySum[k] += wy;
+                }
+            }
+
+            float3 L_surface = 0;
+            float3 L_through = 0;
+            float d = _Thickness;
+            float d2 = d * d;
+            [unroll]
+            for (k = 0; k < 6; k++)
+            {
+                float3 Bi = B[k] / wySum[k];
+                float3 BiOpp = B_back[k] / wySum[k];
+                L_surface += SSS_W[k] * Bi;
+                L_through += SSS_W[k] * BiOpp * exp(-d2 / SSS_V[k]);
+            }
+            return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, ctx.uv).rgb * (L_surface + L_through);
+        }
+    }
+}

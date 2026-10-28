@@ -1,0 +1,63 @@
+ShaderDIY "ShaderDIY/Custom/NewHost"
+{
+    Meta
+    {
+        Category = Custom
+        Pipeline = URP
+        Description = "NewHost：第 1 区（正反面/透明/阴影/光源/Unity 版本）由插件统一控制，不要在这里写 Features。"
+        CompanionScripts =
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _BaseMap ("主贴图", 2D) = "white" {}
+
+        [Region 3] _BaseColor ("颜色", Color) = (1,1,1,1)
+        [Region 3] _Intensity ("强度", Range(0,2)) = 1
+    }
+
+    Formula
+    {
+        C = albedo · _BaseColor · _Intensity
+    }
+
+    // 需要可替换模型时：取消下一行注释，并准备同名槽、同 Signature 的 .sdiym。
+    // Default 必须是已经存在的模块名，否则材质无法编译。
+    // [SLOT CustomTerm Default="DefaultTerm" Signature="half3 EvaluateCustomTerm(ShadingContext ctx)"]
+
+    HLSLINCLUDE
+    {
+        // #SLOT_INJECT
+
+        ShaderDIYVaryings Vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            VertexPositionInputs vpi = GetVertexPositionInputs(positionOS.xyz);
+            o.positionCS = vpi.positionCS;
+            o.positionWS = vpi.positionWS;
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = float4(1, 0, 0, 1);
+            o.uv = uv;
+            o.viewDirWS = normalize(_WorldSpaceCameraPos - vpi.positionWS);
+            o.vertexSH = SampleSH(o.normalWS);
+            o.fogFactor = ComputeFogFactor(vpi.positionCS.z);
+            return o;
+        }
+
+        half4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            half4 albedo = ShaderDIYSample_BaseMap(i.uv) * _BaseColor;
+            half3 color = albedo.rgb * _Intensity;
+
+            // 声明槽位后，在这里组装 ShadingContext 并调用模块函数，例如：
+            // ShadingContext ctx = (ShadingContext)0;
+            // ctx.albedo = albedo.rgb; ctx.N = normalize(i.normalWS); ctx.V = normalize(i.viewDirWS);
+            // color += EvaluateCustomTerm(ctx);
+
+            color = MixFog(color, i.fogFactor);
+            return half4(color, albedo.a);
+        }
+    }
+}

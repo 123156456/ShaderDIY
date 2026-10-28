@@ -1,0 +1,31 @@
+Module "Smith" Slot="G" Category="PBR"
+{
+    Cost
+    {
+        ALU = 8
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        G = Gv(N·V)·Gl(N·L)    k = (r+1)²/8
+    }
+
+    HLSL
+    {
+        //G (Smith-Schlick, direct lighting)
+        float G_Smith(float NoV, float NoL, float roughness)
+        {
+            float K = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+            float G_V = NoV / (NoV * (1.0 - K) + K);
+            float G_L = NoL / (NoL * (1.0 - K) + K);
+            return G_V * G_L;
+        }
+
+        float EvaluateG(ShadingContext ctx)
+        {
+            return G_Smith(ctx.NdotV, ctx.NdotL, ctx.perceptualRoughness);
+        }
+    }
+}

@@ -1,0 +1,22 @@
+Module "None" Slot="DirectSpecular" Category="PBR"
+{
+    Cost
+    {
+        ALU = 0
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        Ds = 0
+    }
+
+    HLSL
+    {
+        half3 EvaluateDirectSpecular(ShadingContext ctx)
+        {
+            return 0;
+        }
+    }
+}

@@ -1,0 +1,28 @@
+Module "Schlick" Slot="F" Category="PBR"
+{
+    Cost
+    {
+        ALU = 6
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        F = F0 + (1-F0)(1-V·H)⁵
+    }
+
+    HLSL
+    {
+        //F
+        float3 FSchlick(float3 F0, float VoH)
+        {
+            return F0 + (1.0 - F0) * pow(1.0 - VoH, 5.0);
+        }
+
+        float3 EvaluateF(ShadingContext ctx)
+        {
+            return FSchlick(ctx.f0, ctx.VdotH);
+        }
+    }
+}

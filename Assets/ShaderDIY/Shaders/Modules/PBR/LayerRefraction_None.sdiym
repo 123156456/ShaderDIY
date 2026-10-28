@@ -1,0 +1,22 @@
+Module "无" Slot="LayerRefraction" Category="PBR"
+{
+    Cost
+    {
+        ALU = 0
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        Out = (C, 1)
+    }
+
+    HLSL
+    {
+        float4 EvaluateLayerRefraction(ShadingContext ctx, float3 result)
+        {
+            return float4(result, 1.0);
+        }
+    }
+}

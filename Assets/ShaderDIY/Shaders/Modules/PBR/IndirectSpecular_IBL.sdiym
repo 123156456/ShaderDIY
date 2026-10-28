@@ -1,0 +1,38 @@
+Module "IBL" Slot="IndirectSpecular" Category="PBR"
+{
+    Cost
+    {
+        ALU = 18
+        Texture = 1
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        Is = Env(R,pos,_Roughness) · EnvBRDFApprox(F0, r, N·V) · specMap
+    }
+
+    HLSL
+    {
+        // URP 对 BRDF LUT 的解析近似（等同 split-sum 里的 EnvBRDF(NoV, roughness)）
+        // scale/bias ≈ LUT.rg，再与 F0 / grazing 合成
+        float3 EnvBRDFApprox(float3 F0, float roughness, float NoV)
+        {
+            float roughness2 = roughness * roughness;
+            float surfaceReduction = 1.0 / (roughness2 + 1.0);
+            float fresnelTerm = Pow4(1.0 - NoV);
+            float reflectivity = max(max(F0.r, F0.g), F0.b);
+            float grazingTerm = saturate(1.0 - roughness + reflectivity);
+            return surfaceReduction * lerp(F0, grazingTerm.xxx, fresnelTerm);
+        }
+
+        float3 EvaluateIndirectSpecular(ShadingContext ctx)
+        {
+            float3 reflectVector = reflect(-ctx.V, ctx.N);
+            float3 prefilteredColor = GlossyEnvironmentReflection(reflectVector, ctx.positionWS, _Roughness, 1.0h);
+            float3 envBRDF = EnvBRDFApprox(ctx.f0, ctx.perceptualRoughness, ctx.NdotV);
+            float3 indirectSpecular = prefilteredColor * envBRDF * ctx.specularColor;
+            return indirectSpecular;
+        }
+    }
+}

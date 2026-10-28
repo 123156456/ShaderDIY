@@ -1,0 +1,59 @@
+Module "查表" Slot="Transmittance" Category="Atmosphere"
+{
+    Properties
+    {
+        [Tab 透射LUT]
+        [Region 2]
+        _TransmittanceLut ("Transmittance Lut", 2D) = "white" {}
+    }
+
+    Cost
+    {
+        ALU = 18
+        Texture = 1
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _ATMO_T_LUT
+    }
+
+    Formula
+    {
+        T = Lut(μ, r)
+    }
+
+    HLSL
+    {
+        float2 GetTransmittanceLutUv (float bottomRadius, float topRadius, float mu, float r)
+        {
+            float H = sqrt(topRadius * topRadius - bottomRadius * bottomRadius);
+            float rho = sqrt(max(r * r - bottomRadius * bottomRadius, 0.0));
+
+            float discriminant = r * r * (mu * mu - 1.0) + topRadius * topRadius;
+            float d = max(-r * mu + sqrt(max(discriminant, 0.0)), 0.0);
+
+            float d_min = topRadius - r;
+            float d_max = rho + H;
+
+            float x_mu = (d - d_min) / (d_max - d_min);
+            float x_r = rho / H;
+            return float2(x_mu, x_r);
+        }
+
+        // 查表计算任意点 p 沿着任意方向 dir 到大气层边缘的 transmittance
+        float3 TransmittanceToAtmosphere (float3 p, float3 dir)
+        {
+            float bottomRadius = EarthRadius;
+            float topRadius = EarthRadius + AtmosphereHeight;
+
+            float3 upVector = normalize(p);
+            float cos_theta = dot(upVector, dir);
+            float r = length(p);
+
+            float2 uv = GetTransmittanceLutUv(bottomRadius, topRadius, cos_theta, r);
+            return SAMPLE_TEXTURE2D_LOD(_TransmittanceLut, sampler_TransmittanceLut, uv, 0).rgb;
+        }
+    }
+}

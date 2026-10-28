@@ -1,0 +1,31 @@
+Module "Lambert" Slot="DirectDiffuse" Category="PBR"
+{
+    Cost
+    {
+        ALU = 6
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _DIFFUSE_LAMBERT
+    }
+
+    Formula
+    {
+        Dd = (1-F)(1-m) · albedo / π
+    }
+
+    HLSL
+    {
+        float3 EvaluateDirectDiffuse(ShadingContext ctx)
+        {
+            float3 F = EvaluateF(ctx);
+            float3 kd = (1.0 - F) * (1.0 - ctx.metallic);
+            float3 diffuse = kd * ctx.albedo / PI;
+            float3 radiance = ctx.lightColor * ctx.NdotL * ctx.attenuation;
+            return diffuse * radiance;
+        }
+    }
+}

@@ -1,0 +1,99 @@
+ShaderDIY "ShaderDIY/Toon/脸"
+{
+    Meta
+    {
+        Category = Toon
+        Pipeline = URP
+        Description = "卡渲脸：Face Light Map SDF 阴影 + Ramp"
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MainTex ("Texture", 2D) = "white" {}
+
+        [Tab Ramp]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _RampTex ("Ramp Tex", 2D) = "white" {}
+
+        [Tab FaceLight]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _FaceLightMap ("Face Light Map", 2D) = "white" {}
+
+        [Tab LightMap]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _LightMap ("Light Map", 2D) = "white" {}
+
+        [Region 3] _ShadowOffset ("Shadow Offset", Range(-1,1)) = 0
+        [Region 3] _ShadowSmoothness ("Shadow Smoothness", Range(0.001,1)) = 0.001
+        [Region 3] _EmissionIntensity ("Emission Intensity", Range(0,1)) = 0.35
+        [Region 3] _RimThreshold ("Rim Threshold", Range(0.001,50)) = 0.1
+        [Region 3] _RimIntensity ("Rim Intensity", Range(0,5)) = 1
+        [Region 3] _RimColor ("Rim Color", Color) = (1,1,1,1)
+        [Region 3] _Color ("Color", Color) = (1,1,1,1)
+    }
+
+    HLSLINCLUDE
+    {
+        float GetFaceShadowValue(float2 uv, float3 lightDirection)
+        {
+            half3 Front = normalize(TransformObjectToWorldDir(half3(0, 1, 0)));
+            half3 Right = normalize(TransformObjectToWorldDir(half3(0, 0, -1)));
+
+            half3 L = normalize(half3(lightDirection.x, 0.0, lightDirection.z));
+            half FDotL = dot(Front.xz, L.xz);
+            half RDotL = dot(Right.xz, L.xz);
+
+            half2 shadowUV = uv;
+            if (RDotL > 0) {
+                shadowUV.x = 1.0 - shadowUV.x;
+            }
+            half faceShadowMap = SAMPLE_TEXTURE2D(_FaceLightMap, sampler_FaceLightMap, shadowUV).r;
+
+            return 1-faceShadowMap;
+        }
+
+        ShaderDIYVaryings Vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            o.positionCS = TransformObjectToHClip(positionOS.xyz);
+            o.uv = uv;
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = float4(1,0,0,1);
+            o.positionWS = TransformObjectToWorld(positionOS.xyz);
+            o.viewDirWS = 0;
+            o.vertexSH = 0;
+            o.fogFactor = 0;
+            return o;
+        }
+
+        float4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            float3 viewDir = normalize(_WorldSpaceCameraPos - i.positionWS);
+
+            Light light = GetMainLight();
+            float3 lightDir = normalize(light.direction);
+            float3 normal = normalize(i.normalWS);
+            float material = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv).a;
+            float faceShadow = GetFaceShadowValue(i.uv, lightDir);
+            float rangeMin = 0.5+ _ShadowOffset- _ShadowSmoothness;
+            float rangeMax = 0.5+ _ShadowOffset;
+
+            int index = 4;
+            index = lerp(index, 1, step(0.2,material));
+            index = lerp(index, 2, step(0.4,material));
+            index = lerp(index, 0, step(0.6,material));
+            index = lerp(index, 3, step(0.8,material));
+
+            float rampU = smoothstep(rangeMin, rangeMax, faceShadow);
+            float rampV = 1.0 - (index + 0.5) * 0.1;
+            float4 rampCol = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(rampU, rampV));
+            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+            float3 emission = col.rgb * _EmissionIntensity*col.a;
+            float fresnel = pow(1 - dot(viewDir, normal), _RimThreshold) * _RimIntensity;
+            float3 rimColor = fresnel * _RimColor.rgb;
+            return float4(rampCol.rgb * col.rgb + emission*_Color + rimColor, 1);
+        }
+    }
+}

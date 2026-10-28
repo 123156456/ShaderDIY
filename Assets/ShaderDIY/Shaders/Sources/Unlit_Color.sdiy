@@ -1,0 +1,43 @@
+ShaderDIY "ShaderDIY/Unlit/Color"
+{
+    Meta
+    {
+        Category = Unlit
+        Pipeline = URP
+        Description = "无光照示例 Host，用于验证大类切换"
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _BaseMap ("主贴图", 2D) = "white" {}
+
+        [Region 3] _BaseColor ("颜色", Color) = (1,1,1,1)
+    }
+
+    HLSLINCLUDE
+    {
+        ShaderDIYVaryings Vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            VertexPositionInputs vpi = GetVertexPositionInputs(positionOS.xyz);
+            o.positionCS = vpi.positionCS;
+            o.positionWS = vpi.positionWS;
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = float4(1,0,0,1);
+            o.uv = uv;
+            o.viewDirWS = normalize(_WorldSpaceCameraPos - vpi.positionWS);
+            o.vertexSH = 0;
+            o.fogFactor = ComputeFogFactor(vpi.positionCS.z);
+            return o;
+        }
+
+        half4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            half4 c = ShaderDIYSample_BaseMap(i.uv) * _BaseColor;
+            c.rgb = MixFog(c.rgb, i.fogFactor);
+            return c;
+        }
+    }
+}

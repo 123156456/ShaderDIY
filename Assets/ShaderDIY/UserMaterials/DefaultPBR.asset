@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 048a500d1a1a93749aa9292dee7c84cd, type: 3}
+  m_Name: DefaultPBR
+  m_EditorClassIdentifier: 
+  hostGuid: 3d430dec1203a2f49840a072a9bf7f4c
+  hostPath: Assets/ShaderDIY/Shaders/Sources/PBR_Lit.sdiy
+  hostName: ShaderDIY/PBR/Lit
+  category: 1
+  slotChoices:
+  - slotName: NDF
+    moduleName: GGX_D
+  - slotName: G
+    moduleName: Smith
+  - slotName: F
+    moduleName: Schlick
+  - slotName: F0
+    moduleName: Dielectric04
+  - slotName: DirectSpecular
+    moduleName: GGX
+  - slotName: DirectDiffuse
+    moduleName: Lambert
+  - slotName: IndirectDiffuse
+    moduleName: SH
+  - slotName: IndirectSpecular
+    moduleName: IBL
+  - slotName: LayerParallax
+    moduleName: "\u65E0"
+  - slotName: LayerRefraction
+    moduleName: "\u65E0"
+  - slotName: LayerSSS
+    moduleName: "\u65E0"
+  - slotName: Light
+    moduleName: "\u4E3B\u5149"
+  featureValues:
+  - name: Cull
+    value: Back
+  - name: ZWrite
+    value: On
+  - name: Queue
+    value: Geometry
+  - name: ReceiveShadows
+    value: On
+  - name: LightingMode
+    value: Multi
+  - name: EngineCompat
+    value: Unity2021
+  material: {fileID: 2100000, guid: ae869df9d1a899b42bc5596e677f84a5, type: 2}
+  generatedShader: {fileID: 4800000, guid: 2cdcdfba60cd8794e9423eaf0b21f9b7, type: 3}
+  lastCompositionHash: de65fee16f7194b459a0c8b9d8f4dc2e
+  lastCompileError: 
+  lastAluCost: 76
+  lastTexCost: 8
+  lastInterpolatorCost: 5
+  lastVariantEstimate: 8
+  lastCompileMs: 190.27530000000002
+  animKeys: []
+  animLength: 4
+  animTime: 0
+  animLoop: 1

@@ -1,0 +1,174 @@
+ShaderDIY 代码编写说明
+====================
+目标环境：Unity 2021.3 + URP 12。用 .sdiy / .sdiym 写骨架和可替换模型，
+插件把选中的模块缝成真正的 URP Shader。不要手改 Generated 目录。
+
+打开入口
+--------
+Window / ShaderDIY / 材质工坊
+第 1 区齿轮：新建 Host Shader、新建 Module。
+
+目录
+----
+Assets/ShaderDIY/Shaders/Sources     Host（.sdiy）
+Assets/ShaderDIY/Shaders/Modules     模块（.sdiym），按大类分子目录
+Assets/ShaderDIY/Shaders/Templates   新建时用的默认模板
+Assets/ShaderDIY/Shaders/Library     ShaderDIYCore.hlsl（ShadingContext）
+Assets/ShaderDIY/Generated           编译产物，禁止手改
+Assets/ShaderDIY/UserMaterials       材质球 Graph + .mat
+Assets/ShaderDIY/Documentation       本说明
+
+面板和文件怎么对应
+----------------
+左上预览     当前 Graph 的 Material
+第 1 区     框架固定：大类、正反面、队列、写深度、接阴影、单/多光、Unity 版本
+            Host 里不要写 Features
+第 2 区     [Region 2] 贴图 + [Tab 名字] + [TexOps(...)]
+第 3 区     每个 [SLOT] 一块：下拉换模块 + 该模块 Properties
+            Host 自己的 [Region 3] 参数在最下面「基础参数」
+第 4 区     Cost 估算 + Formula 公式（换模块会高亮）
+
+原则
+----
+HLSL 仍是 URP HLSL。外围只加 Meta / Properties / SLOT / Formula / Cost。
+换模块 = 换这段 HLSL + 换这段 Properties。用不到的参数不会堆在第 3 区。
+只调 float/贴图不重编译；换模块或第 1 区影响变体的项才会重新缝 Shader。
+
+Host 文件（.sdiy）
+----------------
+文件必须以 ShaderDIY 开头。
+
+ShaderDIY "ShaderDIY/大类/名字"
+{
+    Meta {
+        Category = PBR | Toon | Unlit | Custom     // 对应第 1 区大类
+        Pipeline = URP
+        Description = "说明"
+        CompanionScripts = ShaderDIY.PBRCompanion  // 赋材质时自动挂，逗号分隔，可空
+    }
+
+    Properties {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _BaseMap ("主贴图", 2D) = "white" {}
+
+        [Region 3] _BaseColor ("颜色", Color) = (1,1,1,1)
+        [ShowIf(_UseX, 1)] _Extra ("条件参数", Range(0,1)) = 0
+    }
+
+    Formula { C = Dd + Ds + Id + Is + E }          // 第 4 区总公式
+
+    [SLOT DirectDiffuse Default="Lambert" Signature="half3 EvaluateDirectDiffuse(ShadingContext ctx)"]
+    // Default 必须是已有模块的 Module "名字"
+    // Signature 的函数名必须在该槽每一个 .sdiym 的 HLSL 里出现
+
+    HLSLINCLUDE {
+        // #SLOT_INJECT     占位。编译时模块函数插在 Vert/Frag 前面
+        ShaderDIYVaryings Vert(...) { ... }
+        half4 Frag(ShaderDIYVaryings i) : SV_Target { ... }
+    }
+}
+
+没有 SLOT 的 Host 也可以（例如 Unlit），此时第 3 区只有基础参数。
+有 SLOT 就必须能解析到 Default 模块，否则编译报「缺少模块」。
+
+Module 文件（.sdiym）
+--------------------
+文件必须以 Module 开头。Slot 必须和 Host 的 [SLOT 名字] 完全一致。
+
+Module "Lambert" Slot="DirectDiffuse" Category="PBR"
+{
+    Properties {
+        [Region 3] _DiffuseWrap ("漫反射 Wrap", Range(0,1)) = 0
+    }
+    Cost { ALU = 8 Texture = 0 Interpolator = 0 }   // 第 4 区数字
+    Keywords { _DIFFUSE_LAMBERT }                   // 编译进 #define
+    Formula { Dd = ρ(1-m) · wrap(N·L) · Light }     // 第 4 区该槽公式
+    HLSL {
+        half3 EvaluateDirectDiffuse(ShadingContext ctx) { ... }
+    }
+}
+
+Properties 属性标记
+------------------
+[Region 2]     进贴图区
+[Region 3]     进参数区（模块属性会跟在对应槽下面）
+[Tab 名字]     第 2 区顶部按钮文字；也可用单独一行 #名字
+[TexOps(TilingOffset, Channel, Invert, MipBias)]
+               贴图卡片右侧：缩放XY / 偏移ZW、通道、Mip、反相
+               可只写需要的项，或 TexOps(All)
+[ShowIf(_Prop, 1)]   _Prop 接近该值才显示
+[Invert] / [OneMinus]  参数旁 1- 开关（生成隐藏 _Name_InvertOp）
+
+类型：2D / Color / Range(a,b) / Float / Vector / Toggle / Enum(A,B)
+
+采样约定
+--------
+贴图不要自己 SAMPLE_TEXTURE2D。编译器为每个 2D 属性生成：
+    half4 ShaderDIYSample_BaseMap(float2 uv)
+内部已经做：_ST 缩放偏移、MipBias、通道、反相。
+法线：UnpackNormalScale(ShaderDIYSample_BumpMap(uv), _BumpScale)
+
+内置宏（Frag 里可用）
+--------------------
+SHADERDIY_RECEIVE_SHADOWS   第 1 区「接阴影」
+SHADERDIY_MULTI_LIGHT       第 1 区「多光源」
+SHADERDIY_URP12 / URP14 / URP17
+SHADERDIY_Unity2021 / Unity2022 / Unity6
+以及模块 Keywords 里列出的符号（被写成 #define 1）
+
+建议主光：
+#if SHADERDIY_RECEIVE_SHADOWS
+    Light mainLight = GetMainLight(TransformWorldToShadowCoord(ctx.positionWS));
+#else
+    Light mainLight = GetMainLight();
+#endif
+ShaderDIY_FillLight(ctx, mainLight.direction, mainLight.color,
+    mainLight.distanceAttenuation * mainLight.shadowAttenuation);
+
+ShadingContext（Library/ShaderDIYCore.hlsl）
+------------------------------------------
+几何：positionWS uv N V L H T B
+材质：albedo alpha metallic smoothness perceptualRoughness roughness
+      occlusion emission f0
+点积：NdotV NdotL NdotH VdotH TdotH BdotH TdotL BdotL
+灯光：lightColor attenuation bakedGI
+FillLight 会填 L/H 和所有点积。各向异性 NDF 用 T/B 点积。
+
+内置 PBR 槽（可直接写替换模块）
+--------------------------------
+DirectDiffuse      half3 EvaluateDirectDiffuse(ShadingContext ctx)
+DirectSpecular     half3 EvaluateDirectSpecular(ShadingContext ctx)
+IndirectDiffuse    half3 EvaluateIndirectDiffuse(ShadingContext ctx)
+IndirectSpecular   half3 EvaluateIndirectSpecular(ShadingContext ctx)
+NDF                half  EvaluateNDF(ShadingContext ctx)
+
+PBR Host 在 Frag 里已经调用前四个；NDF 由高光模块内部再调 EvaluateNDF。
+给 NDF 写新模型时，函数名必须是 EvaluateNDF，返回 half。
+
+新建流程
+--------
+1) 齿轮 → 新建 Host：得到可编译的骨架（贴图+颜色+强度）。
+   勾选「同时生成一个可替换槽 + 默认模块」会写入 [SLOT] 并生成配套 .sdiym。
+2) 齿轮 → 新建 Module：选槽位。模板会填好 Signature 和示例函数体。
+3) 把 Host Frag 里真正调用模块函数（PBR_Lit.sdiy 是完整范例）。
+4) 在材质工坊选大类 → 换模块看预览；第 3 区参数、第 4 区公式应跟着变。
+
+常见错误
+--------
+- SLOT 写了但 Default 模块不存在 → 缺少模块
+- 模块函数名和 Signature 不一致 → 未实现签名
+- 贴图没用 ShaderDIYSample_Xxx → 第 2 区缩放/通道/Mip/反相无效
+- 在 Host 里写 Features / Unity 版本 → 会被忽略，第 1 区才生效
+- 手改 Generated/*.shader → 下次编译覆盖
+- 属性名不要用中文；显示名可以中文
+- 文件用 UTF-8，插件写出时用 CRLF
+
+参考文件
+--------
+完整 Host：Shaders/Sources/PBR_Lit.sdiy
+简单 Host：Shaders/Sources/Unlit_Color.sdiy
+模块范例：Shaders/Modules/PBR/DirectDiffuse_Lambert.sdiym
+          Shaders/Modules/PBR/NDF_Anisotropic.sdiym
+模板：    Shaders/Templates/HostTemplate.sdiy
+          Shaders/Templates/ModuleTemplate.sdiym

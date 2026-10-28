@@ -1,0 +1,178 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: DefaultPBR
+  m_Shader: {fileID: 4800000, guid: 2cdcdfba60cd8794e9423eaf0b21f9b7, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FaceLightMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RampTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoughnessMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecularMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ThicknessMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Anisotropy: 1
+    - _BaseMap_Channel: 0
+    - _BaseMap_Invert: 0
+    - _BaseMap_MipBias: -4
+    - _BumpMap_Channel: 0
+    - _BumpMap_Invert: 0
+    - _BumpMap_MipBias: 0
+    - _BumpScale: 1
+    - _CelBands: 3
+    - _CelEdge: 0.05
+    - _Cutoff: 0.722
+    - _DiffuseWrap: 0
+    - _EmissionIntensity: 0.35
+    - _EmissionMap_Channel: 0
+    - _EmissionMap_Invert: 0
+    - _EmissionMap_MipBias: 0
+    - _FaceLightMap_Channel: 0
+    - _FaceLightMap_Invert: 0
+    - _FaceLightMap_MipBias: 0
+    - _GIIntensity: 1
+    - _IBLIntensity: 1
+    - _LightMap_Channel: 0
+    - _LightMap_Invert: 0
+    - _LightMap_MipBias: 0
+    - _MainTex_Channel: 0
+    - _MainTex_Invert: 0
+    - _MainTex_MipBias: 0
+    - _MetalMap_Channel: 0
+    - _MetalMap_Invert: 0
+    - _MetalMap_MipBias: 0
+    - _Metallic: 0.06147355
+    - _MetallicGlossMap_Channel: 0
+    - _MetallicGlossMap_Invert: 0
+    - _MetallicGlossMap_MipBias: 0
+    - _MetallicIntensity: 1
+    - _MetallicMap_Channel: 0
+    - _MetallicMap_Invert: 0
+    - _MetallicMap_MipBias: 0
+    - _MieG: 0.76
+    - _NonMetallicIntensity: 1
+    - _NormalMap_Channel: 0
+    - _NormalMap_Invert: 0
+    - _NormalMap_MipBias: 0
+    - _NormalTex_Channel: 0
+    - _NormalTex_Invert: 0
+    - _NormalTex_MipBias: 0
+    - _Occlusion: 1
+    - _OcclusionMap_Channel: 0
+    - _OcclusionMap_Invert: 0
+    - _OcclusionMap_MipBias: 0
+    - _OcclusionStrength: 1
+    - _OutlineWidth: 0.005
+    - _RampTex_Channel: 0
+    - _RampTex_Invert: 0
+    - _RampTex_MipBias: 0
+    - _RimIntensity: 1
+    - _RimThreshold: 0.1
+    - _Roughness: 0.5
+    - _RoughnessMap_Channel: 0
+    - _RoughnessMap_Invert: 0
+    - _RoughnessMap_MipBias: 0
+    - _SSSBlurWidth: 0.002
+    - _ShadowOffset: 0
+    - _ShadowSmoothness: 0.001
+    - _Shininess: 32
+    - _Smoothness: 0.5
+    - _SpecIntensity: 1
+    - _SpecularMap_Channel: 0
+    - _SpecularMap_Invert: 0
+    - _SpecularMap_MipBias: 0
+    - _Subsurface: 0
+    - _Thickness: 0.71
+    - _ThicknessMap_Channel: 0
+    - _ThicknessMap_Invert: 0
+    - _ThicknessMap_MipBias: 0
+    - _TransAmbient: 0.2
+    - _TransDirect: 1
+    - _TransNormalDistortion: 0.5
+    - _TransScattering: 2
+    m_Colors:
+    - _AmbientColor: {r: 0.14999998, g: 0.14999998, b: 0.17999998, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FrontTranslucency: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Translucency: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []

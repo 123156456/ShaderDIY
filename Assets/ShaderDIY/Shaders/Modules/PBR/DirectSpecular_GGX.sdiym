@@ -1,0 +1,32 @@
+Module "GGX" Slot="DirectSpecular" Category="PBR"
+{
+    Cost
+    {
+        ALU = 8
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _SPEC_GGX
+    }
+
+    Formula
+    {
+        Ds = D·G·F / (4 (N·V)(N·L)) · specMap
+    }
+
+    HLSL
+    {
+        float3 EvaluateDirectSpecular(ShadingContext ctx)
+        {
+            float D = EvaluateNDF(ctx);
+            float G = EvaluateG(ctx);
+            float3 F = EvaluateF(ctx);
+            float3 specular = D * G * F / max(4.0 * ctx.NdotV * ctx.NdotL, 1e-4);
+            specular *= ctx.specularColor;
+            return specular;
+        }
+    }
+}

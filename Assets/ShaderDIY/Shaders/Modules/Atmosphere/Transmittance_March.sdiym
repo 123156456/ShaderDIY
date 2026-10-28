@@ -1,0 +1,41 @@
+Module "路径积分" Slot="Transmittance" Category="Atmosphere"
+{
+    Cost
+    {
+        ALU = 48
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _ATMO_T_MARCH
+    }
+
+    Formula
+    {
+        T = exp(-Σ σ_t(p) ds)    16 步
+    }
+
+    HLSL
+    {
+        // T = Π exp(-σ_t(p) ds) = exp(-Σ σ_t(p) ds)
+        float3 Transmittance (float3 p1, float3 p2, float3 planetCenter)
+        {
+            const int steps = 16;
+            float3 delta = p2 - p1;
+            float rayLen = length(delta);
+            float3 dir = delta / max(rayLen, 1e-3);
+            float ds = rayLen / steps;
+
+            float3 opticalDepth = 0.0;
+            [unroll]
+            for (int i = 0; i < steps; i++)
+            {
+                float3 p = p1 + dir * (ds * (i + 0.5));
+                opticalDepth += Extinction(Height(p, planetCenter)) * ds;
+            }
+            return exp(-opticalDepth);
+        }
+    }
+}

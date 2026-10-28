@@ -1,0 +1,45 @@
+Module "各向异性" Slot="NDF" Category="PBR"
+{
+    Properties
+    {
+        [Region 3] _Anisotropy ("各向异性", Range(-1,1)) = 0.8
+    }
+
+    Cost
+    {
+        ALU = 14
+        Texture = 0
+        Interpolator = 1
+    }
+
+    Keywords
+    {
+        _NDF_ANISO
+    }
+
+    Formula
+    {
+        D = 1 / (π ax ay d²)    ax=1+aniso  ay=1-aniso  d=(T·H/ax)²+(B·H/ay)²+(N·H)²
+    }
+
+    HLSL
+    {
+        // Anisotropic GGX. ax/ay come only from anisotropy; both stay away from 0.
+        float DGGX(float NoH, float3 t, float3 b, float3 h)
+        {
+            float aniso = clamp(_Anisotropy, -0.99, 0.99);
+            float ax = 1.0 + aniso;
+            float ay = 1.0 - aniso;
+            float ToH = dot(t, h);
+            float BoH = dot(b, h);
+            float d = (ToH * ToH) / (ax * ax) + (BoH * BoH) / (ay * ay) + NoH * NoH;
+            d = max(d, 1e-4);
+            return 1.0 / (PI * d * d * ax * ay);
+        }
+
+        float EvaluateNDF(ShadingContext ctx)
+        {
+            return DGGX(ctx.NdotH, ctx.T, ctx.B, ctx.H);
+        }
+    }
+}

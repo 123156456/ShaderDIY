@@ -1,0 +1,36 @@
+Module "GGX_D" Slot="NDF" Category="PBR"
+{
+    Cost
+    {
+        ALU = 10
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _NDF_GGX
+    }
+
+    Formula
+    {
+        D = α² / π [(N·H)²(α²-1)+1]²    α = roughness²
+    }
+
+    HLSL
+    {
+        //D (roughness = perceptual; α = roughness²)
+        float DGGX(float NoH, float roughness)
+        {
+            float a = roughness * roughness;
+            float a2 = a * a;
+            float d = (NoH * NoH * (a2 - 1.0) + 1.0);
+            return a2 / (PI * d * d);
+        }
+
+        float EvaluateNDF(ShadingContext ctx)
+        {
+            return DGGX(ctx.NdotH, ctx.perceptualRoughness);
+        }
+    }
+}

@@ -1,0 +1,60 @@
+Module "内层视差" Slot="LayerParallax" Category="PBR"
+{
+    Properties
+    {
+        [Tab 内层噪声]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _NoiseTex ("Inner Noise", 2D) = "white" {}
+
+        [Tab 厚度]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _ThicknessMap ("Thickness Map", 2D) = "white" {}
+
+        [Region 3] _Thickness ("Thickness", Range(0,1)) = 1
+        [Region 3] _ParallaxH ("Parallax Height Sample", Range(0,1)) = 0.5
+        [Region 3] _ParallaxHeight ("Parallax Height Scale", Range(0,0.2)) = 0.05
+        [Region 3] _InnerColor ("Inner Color", Color) = (0.4,0.7,1,1)
+        [Region 3] _InnerColorThicknessPower ("Inner Thickness Power", Range(0.1,8)) = 1
+    }
+
+    Cost
+    {
+        ALU = 16
+        Texture = 2
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _LAYER_PARALLAX
+    }
+
+    Formula
+    {
+        Inner = noise(uv+ParallaxOffset) · thick^p · InnerColor
+    }
+
+    HLSL
+    {
+        // 对应 Built-in UnityCG.ParallaxOffset
+        float2 ParallaxOffset(half h, half height, half3 viewDirTS)
+        {
+            h = h * height - height * 0.5;
+            half3 v = normalize(viewDirTS);
+            v.z += 0.42;
+            return h * (v.xy / v.z);
+        }
+
+        float3 EvaluateLayerParallax(ShadingContext ctx)
+        {
+            float thickness = SAMPLE_TEXTURE2D(_ThicknessMap, sampler_ThicknessMap, TRANSFORM_TEX(ctx.uv, _MainTex)).r * _Thickness;
+            float3x3 TBN = float3x3(ctx.T, ctx.B, ctx.Ng);
+            float3 viewDirTS = mul(TBN, ctx.V);
+            float2 parallaxUV = TRANSFORM_TEX(ctx.uv, _NoiseTex) + ParallaxOffset(_ParallaxH, _ParallaxHeight, viewDirTS);
+            float innerPower = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, parallaxUV).r;
+            innerPower *= pow(max(thickness, 1e-4), _InnerColorThicknessPower);
+            float3 innerColor = innerPower * _InnerColor.rgb;
+            return innerColor;
+        }
+    }
+}

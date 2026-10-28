@@ -1,0 +1,22 @@
+Module "无" Slot="LayerParallax" Category="PBR"
+{
+    Cost
+    {
+        ALU = 0
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        Inner = 0
+    }
+
+    HLSL
+    {
+        float3 EvaluateLayerParallax(ShadingContext ctx)
+        {
+            return 0;
+        }
+    }
+}

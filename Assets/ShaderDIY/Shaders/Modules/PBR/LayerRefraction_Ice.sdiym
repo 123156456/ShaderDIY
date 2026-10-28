@@ -1,0 +1,49 @@
+Module "抓屏折射" Slot="LayerRefraction" Category="PBR"
+{
+    Properties
+    {
+        [Region 3] _ScreenUVDistor ("Screen UV Distortion", Range(0,0.2)) = 0.05
+        [Region 3] _GrabIntensity ("Grab Intensity", Range(0,1)) = 1
+        [Region 3] _Alpha ("Alpha", Range(0,1)) = 0.5
+    }
+
+    Cost
+    {
+        ALU = 18
+        Texture = 1
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _LAYER_REFRACTION
+    }
+
+    Formula
+    {
+        C = lerp(C, grab, (1-F)·I)    α = _Alpha·lerp(0.35,1,F)
+    }
+
+    HLSL
+    {
+        float3 FschlickRoughness(float3 F0, float roughness, float NdotL)
+        {
+            return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) * pow(clamp(1.0 - NdotL, 0.0, 1.0), 5.0);
+        }
+
+        float4 EvaluateLayerRefraction(ShadingContext ctx, float3 result)
+        {
+            float3 fresnelIBL = FschlickRoughness(ctx.f0, ctx.roughness, ctx.NdotV);
+            float2 screenUV = GetNormalizedScreenSpaceUV(ctx.positionCS);
+            screenUV = saturate(screenUV + screenUV * ctx.N.xy * _ScreenUVDistor);
+            float3 grab = SampleSceneColor(screenUV);
+            // 正对更多折射(grab)，掠射更多表面反射(result)
+            float grabW = saturate((1.0 - fresnelIBL.r) * _GrabIntensity);
+            result = lerp(result, grab, grabW);
+
+            // 掠射更不透（边缘更实），正对更透
+            float alpha = saturate(_Alpha * lerp(0.35, 1.0, fresnelIBL.r));
+            return float4(result, alpha);
+        }
+    }
+}

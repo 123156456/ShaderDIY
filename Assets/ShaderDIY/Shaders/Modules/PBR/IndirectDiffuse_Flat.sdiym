@@ -1,0 +1,28 @@
+Module "Flat" Slot="IndirectDiffuse" Category="PBR"
+{
+    Properties
+    {
+        [Region 3] _AmbientColor ("扁平环境色", Color) = (0.15,0.15,0.18,1)
+    }
+
+    Cost
+    {
+        ALU = 3
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        Id = ρ(1-m) · Ambient
+    }
+
+    HLSL
+    {
+        half3 EvaluateIndirectDiffuse(ShadingContext ctx)
+        {
+            half3 diffuse = ctx.albedo * (1.0h - ctx.metallic);
+            return diffuse * _AmbientColor.rgb;
+        }
+    }
+}

@@ -1,0 +1,24 @@
+Module "SH" Slot="IndirectDiffuse" Category="PBR"
+{
+    Cost
+    {
+        ALU = 6
+        Texture = 0
+        Interpolator = 1
+    }
+
+    Formula
+    {
+        Id = SH(N) · albedo · (1-m)
+    }
+
+    HLSL
+    {
+        float3 EvaluateIndirectDiffuse(ShadingContext ctx)
+        {
+            float3 irradianceSH = SampleSH(ctx.N);
+            float3 indirectDiffuse = irradianceSH * ctx.albedo * (1.0 - ctx.metallic);
+            return indirectDiffuse;
+        }
+    }
+}

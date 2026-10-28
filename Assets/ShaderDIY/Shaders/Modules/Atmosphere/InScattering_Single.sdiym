@@ -1,0 +1,86 @@
+Module "单次" Slot="InScattering" Category="Atmosphere"
+{
+    Cost
+    {
+        ALU = 64
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _ATMO_S_SINGLE
+    }
+
+    Formula
+    {
+        C = Σ t1 · s · t2 · ds · L
+    }
+
+    HLSL
+    {
+        float3 EvaluateAtmosphere(float3 positionWS)
+        {
+            float3 eyePos = _WorldSpaceCameraPos.xyz;
+            float3 lightDir = GetMainLight().direction;
+            float3 sunLuminance = GetMainLight().color;
+            float3 viewDir = normalize(positionWS - eyePos);
+
+            // 游戏世界 y=0 当地面，地心只在公式里，不在场景里
+            float3 planetCenter = float3(eyePos.x, -EarthRadius, eyePos.z);
+
+            float tAtmo = RayIntersectSphere(planetCenter, EarthRadius + AtmosphereHeight, eyePos, viewDir);
+            float tGround = RayIntersectSphere(planetCenter, EarthRadius, eyePos, viewDir);
+            if (tAtmo < 0.0)
+                return float3(0, 0, 0);
+
+            float rayLen = (tGround > 0.0 && tGround < tAtmo) ? tGround : tAtmo;
+
+            const int N_SAMPLE = 16;
+            float ds = rayLen / N_SAMPLE;
+
+            float3 color = 0.0;
+#ifdef _ATMO_T_LUT
+            float3 opticalDepth = 0.0;
+            float3 p1 = eyePos + viewDir * (ds * 0.5);
+            [loop]
+            for (int n = 0; n < N_SAMPLE; n++)
+            {
+                // 积累沿途的湮灭系数
+                float h = Height(p1, planetCenter);
+                float3 extinction = Extinction(h);
+                opticalDepth += extinction * ds;
+
+                float3 t1 = TransmittanceToAtmosphere(p1 - planetCenter, lightDir);
+                float cosTheta = dot(-viewDir, lightDir);
+                float3 s = RayleiCoefficient(h) * RayleiPhase(cosTheta) + MieCoefficient(h) * MiePhase(cosTheta, _MieG);
+                float3 t2 = exp(-opticalDepth);
+
+                color += t1 * s * t2 * ds * sunLuminance;
+                p1 += viewDir * ds;
+            }
+#else
+            float3 p1 = eyePos + viewDir * (ds * 0.5);
+            [loop]
+            for (int n = 0; n < N_SAMPLE; n++)
+            {
+                float disToAtmosphere = RayIntersectSphere(planetCenter, EarthRadius + AtmosphereHeight, p1, lightDir);
+                if (disToAtmosphere > 0.0)
+                {
+                    float3 p2 = p1 + lightDir * disToAtmosphere;
+                    float3 t1 = Transmittance(p2, p1, planetCenter);
+
+                    float h = Height(p1, planetCenter);
+                    float cosTheta = dot(-viewDir, lightDir);
+                    float3 s = RayleiCoefficient(h) * RayleiPhase(cosTheta) + MieCoefficient(h) * MiePhase(cosTheta, _MieG);
+                    float3 t2 = Transmittance(p1, eyePos, planetCenter);
+
+                    color += t1 * s * t2 * ds * sunLuminance;
+                }
+                p1 += viewDir * ds;
+            }
+#endif
+            return color;
+        }
+    }
+}

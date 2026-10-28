@@ -1,0 +1,31 @@
+Module "主光阴影" Slot="Light" Category="PBR"
+{
+    Cost
+    {
+        ALU = 8
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _LIGHT_SHADOWCOORD
+    }
+
+    Formula
+    {
+        L = GetMainLight(shadowCoord)
+    }
+
+    HLSL
+    {
+        void EvaluateLight(inout ShadingContext ctx)
+        {
+            float4 shadowCoord = TransformWorldToShadowCoord(ctx.positionWS);
+            Light light = GetMainLight(shadowCoord);
+            ctx.L = normalize(light.direction);
+            ctx.lightColor = light.color;
+            ctx.attenuation = light.distanceAttenuation * light.shadowAttenuation;
+        }
+    }
+}

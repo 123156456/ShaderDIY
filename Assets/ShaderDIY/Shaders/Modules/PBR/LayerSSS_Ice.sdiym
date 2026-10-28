@@ -1,0 +1,57 @@
+Module "经验SSS" Slot="LayerSSS" Category="PBR"
+{
+    Properties
+    {
+        [Tab 厚度]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _ThicknessMap ("Thickness Map", 2D) = "white" {}
+
+        [Region 3] _Thickness ("Thickness", Range(0,1)) = 1
+        [Region 3] _TransNormalDistortion ("Trans Normal Distortion", Range(0,1)) = 0.5
+        [Region 3] _TransScattering ("Trans Scattering", Range(0.1,10)) = 2
+        [Region 3] _TransDirect ("Trans Direct", Range(0,10)) = 1
+        [Region 3] _TransAmbient ("Trans Ambient", Range(0,10)) = 0.2
+        [Region 3] _Translucency ("Back Translucency", Color) = (1,1,1,1)
+        [Region 3] _FrontTranslucency ("Front Translucency", Color) = (0.2,0.2,0.2,1)
+    }
+
+    Cost
+    {
+        ALU = 24
+        Texture = 1
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _LAYER_SSS
+    }
+
+    Formula
+    {
+        SSS = (backSS·背色 + frontSS·正色)·(1-thick)·albedo·(1-m)
+    }
+
+    HLSL
+    {
+        float3 SubsurfaceScatteringNew(float3 vDir, float3 lDir, float3 nDir, float3 lightAtten, float3 ambient)
+        {
+            half3 lightDir = lDir + nDir * _TransNormalDistortion;
+            half transVdotL = pow(saturate(dot(vDir, -lightDir)), _TransScattering);
+            half3 translucency = lightAtten * (transVdotL * _TransDirect + ambient * _TransAmbient);
+            return translucency;
+        }
+
+        float3 EvaluateLayerSSS(ShadingContext ctx)
+        {
+            float thickness = SAMPLE_TEXTURE2D(_ThicknessMap, sampler_ThicknessMap, TRANSFORM_TEX(ctx.uv, _MainTex)).r * _Thickness;
+            float3 lightAtten = ctx.lightColor * ctx.attenuation;
+            float3 irradianceSH = ctx.bakedGI;
+            float3 backSS = SubsurfaceScatteringNew(ctx.V, ctx.L, ctx.N, lightAtten, irradianceSH);
+            float3 frontSS = SubsurfaceScatteringNew(ctx.V, -ctx.L, ctx.N, lightAtten, irradianceSH);
+            float3 sss = backSS * _Translucency.rgb + frontSS * _FrontTranslucency.rgb;
+            sss *= (1.0 - thickness) * ctx.albedo * (1.0 - ctx.metallic);
+            return sss;
+        }
+    }
+}

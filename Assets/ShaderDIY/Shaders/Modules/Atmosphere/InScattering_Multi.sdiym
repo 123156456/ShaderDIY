@@ -1,0 +1,92 @@
+Module "多次" Slot="InScattering" Category="Atmosphere"
+{
+    Properties
+    {
+        [Tab 多次LUT]
+        [Region 2]
+        _MultiScatteringLut ("Multi Scattering Lut", 2D) = "black" {}
+    }
+
+    Cost
+    {
+        ALU = 80
+        Texture = 1
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _ATMO_S_MULTI
+    }
+
+    Formula
+    {
+        C = Σ (t1·s·t2 + σs·G_ALL·t2) · ds · L
+    }
+
+    HLSL
+    {
+        // p 为相对地心坐标；返回 σs * G_ALL
+        float3 GetMultiScattering (float3 p, float3 lightDir)
+        {
+            float h = length(p) - EarthRadius;
+            float3 sigma_s = RayleiCoefficient(h) + MieCoefficient(h);
+
+            float cosSunZenithAngle = dot(normalize(p), lightDir);
+            float2 uv = float2(cosSunZenithAngle * 0.5 + 0.5, h / AtmosphereHeight);
+            float3 G_ALL = SAMPLE_TEXTURE2D_LOD(_MultiScatteringLut, sampler_MultiScatteringLut, uv, 0).rgb;
+
+            return G_ALL * sigma_s;
+        }
+
+        float3 EvaluateAtmosphere(float3 positionWS)
+        {
+            float3 eyePos = _WorldSpaceCameraPos.xyz;
+            float3 lightDir = GetMainLight().direction;
+            float3 sunLuminance = GetMainLight().color;
+            float3 viewDir = normalize(positionWS - eyePos);
+
+            // 游戏世界 y=0 当地面，地心只在公式里，不在场景里
+            float3 planetCenter = float3(eyePos.x, -EarthRadius, eyePos.z);
+
+            float tAtmo = RayIntersectSphere(planetCenter, EarthRadius + AtmosphereHeight, eyePos, viewDir);
+            float tGround = RayIntersectSphere(planetCenter, EarthRadius, eyePos, viewDir);
+            if (tAtmo < 0.0)
+                return float3(0, 0, 0);
+
+            float rayLen = (tGround > 0.0 && tGround < tAtmo) ? tGround : tAtmo;
+
+            const int N_SAMPLE = 16;
+            float ds = rayLen / N_SAMPLE;
+
+            float3 color = 0.0;
+            float3 opticalDepth = 0.0;
+            float3 p1 = eyePos + viewDir * (ds * 0.5);
+            [loop]
+            for (int n = 0; n < N_SAMPLE; n++)
+            {
+                // 积累沿途的湮灭系数
+                float h = Height(p1, planetCenter);
+                float3 extinction = Extinction(h);
+                opticalDepth += extinction * ds;
+
+                float3 pPlanet = p1 - planetCenter;
+                float3 t1 = TransmittanceToAtmosphere(pPlanet, lightDir);
+                float cosTheta = dot(-viewDir, lightDir);
+                float3 s = RayleiCoefficient(h) * RayleiPhase(cosTheta) + MieCoefficient(h) * MiePhase(cosTheta, _MieG);
+                float3 t2 = exp(-opticalDepth);
+
+                // 单次散射
+                float3 inScattering = t1 * s * t2 * ds * sunLuminance;
+                color += inScattering;
+
+                // 多重散射
+                float3 multiScattering = GetMultiScattering(pPlanet, lightDir);
+                color += multiScattering * t2 * ds * sunLuminance;
+
+                p1 += viewDir * ds;
+            }
+            return color;
+        }
+    }
+}

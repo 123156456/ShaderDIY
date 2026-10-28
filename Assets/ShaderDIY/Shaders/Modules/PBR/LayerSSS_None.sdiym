@@ -1,0 +1,22 @@
+Module "无" Slot="LayerSSS" Category="PBR"
+{
+    Cost
+    {
+        ALU = 0
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        SSS = 0
+    }
+
+    HLSL
+    {
+        float3 EvaluateLayerSSS(ShadingContext ctx)
+        {
+            return 0;
+        }
+    }
+}

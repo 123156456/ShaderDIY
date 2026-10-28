@@ -1,0 +1,25 @@
+Module "主光" Slot="Light" Category="PBR"
+{
+    Cost
+    {
+        ALU = 4
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Formula
+    {
+        L = GetMainLight()
+    }
+
+    HLSL
+    {
+        void EvaluateLight(inout ShadingContext ctx)
+        {
+            Light light = GetMainLight();
+            ctx.L = light.direction;
+            ctx.lightColor = light.color;
+            ctx.attenuation = light.distanceAttenuation * light.shadowAttenuation;
+        }
+    }
+}

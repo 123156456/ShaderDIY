@@ -1,0 +1,109 @@
+ShaderDIY "ShaderDIY/Toon/头发"
+{
+    Meta
+    {
+        Category = Toon
+        Pipeline = URP
+        Description = "卡渲头发：Ramp + LightMap + Matcap/Blinn"
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MainTex ("Texture", 2D) = "white" {}
+
+        [Tab LightMap]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _LightMap ("Light Map", 2D) = "white" {}
+
+        [Tab Ramp]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _RampTex ("Ramp Tex", 2D) = "white" {}
+
+        [Tab 法线]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _NormalTex ("Normal Tex", 2D) = "bump" {}
+
+        [Tab Matcap]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MetalMap ("Metal Map (Matcap)", 2D) = "white" {}
+
+        [Region 3] _ShadowOffset ("Shadow Offset", Range(-1,1)) = 0
+        [Region 3] _ShadowSmoothness ("Shadow Smoothness", Range(0.001,1)) = 0.001
+        [Region 3] _MetallicIntensity ("Metallic Intensity", Range(0,5)) = 1
+        [Region 3] _NonMetallicIntensity ("NonMetallic Intensity", Range(0,5)) = 1
+        [Region 3] _Shininess ("Shininess", Range(1,128)) = 32
+        [Region 3] _EmissionIntensity ("Emission Intensity", Range(0,1)) = 0.35
+    }
+
+    HLSLINCLUDE
+    {
+        float GetShadow(float3 normal, float3 lightDir, float ao)
+        {
+            float NdotL = dot(normal, lightDir) * 0.5 + 0.5;
+            float shadow = saturate(2.0 * NdotL * ao);
+            return shadow;
+        }
+
+        ShaderDIYVaryings Vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            o.positionCS = TransformObjectToHClip(positionOS.xyz);
+            o.uv = uv;
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = float4(TransformObjectToWorldDir(tangentOS.xyz), tangentOS.w);
+            o.positionWS = TransformObjectToWorld(positionOS.xyz);
+            o.viewDirWS = 0;
+            o.vertexSH = 0;
+            o.fogFactor = 0;
+            return o;
+        }
+
+        float4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            float3 bitangent = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
+            float3x3 TBN = float3x3(i.tangentWS.xyz, bitangent, i.normalWS);
+            float3 nDirTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, i.uv));
+            float3 nDirWS = normalize(mul(nDirTS, TBN));
+
+            float4 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
+            float ao = lightMap.g;
+            float material = lightMap.a;
+            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+
+            int index = 4;
+            index = lerp(index, 1, step(0.2, material));
+            index = lerp(index, 2, step(0.4, material));
+            index = lerp(index, 0, step(0.6, material));
+            index = lerp(index, 3, step(0.8, material));
+
+            Light light = GetMainLight();
+            float3 lightDir = normalize(light.direction);
+            float3 normal = nDirWS;
+            float3 viewDir = normalize(_WorldSpaceCameraPos - i.positionWS);
+
+            float3 halfDir = normalize(lightDir + viewDir);
+            float blinn = pow(saturate(dot(normal, halfDir)), _Shininess);
+
+            float3 normalVS = mul((float3x3)UNITY_MATRIX_V, normal);
+            float2 matcapUV = 0.5 * normalVS.xy + 0.5;
+            float3 metalMap = SAMPLE_TEXTURE2D(_MetalMap, sampler_MetalMap, matcapUV).rgb;
+
+            float3 metallic = lerp(float3(0, 0, 0), blinn * lightMap.b * col.rgb * metalMap * _MetallicIntensity * lightMap.r, step(0.9, lightMap.r));
+            float3 nonMetallic = lerp(blinn * lightMap.b * col.rgb * _NonMetallicIntensity * lightMap.r, float3(0, 0, 0), step(0.9, lightMap.r));
+            float3 specular = metallic + nonMetallic;
+
+            float3 emission = col.rgb * _EmissionIntensity*col.a;
+
+            float shadow = GetShadow(normalize(normal), lightDir, ao);
+            float rangeMin = 0.5 + _ShadowOffset - _ShadowSmoothness;
+            float rangeMax = 0.5 + _ShadowOffset;
+            float rampU = smoothstep(rangeMin, rangeMax, shadow);
+            float rampV = 1.0 - (index + 0.5) * 0.1;
+            float4 rampCol = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(rampU, rampV));
+
+            return float4(rampCol.rgb * col.rgb + specular + emission, 1);
+        }
+    }
+}

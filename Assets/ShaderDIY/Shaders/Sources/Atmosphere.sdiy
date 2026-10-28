@@ -1,0 +1,125 @@
+ShaderDIY "ShaderDIY/Atmosphere/Sky"
+{
+    Meta
+    {
+        Category = Atmosphere
+        Pipeline = URP
+        Description = "大气散射：透射率（路径积分/查表）与散射积分（单次/多次）可替换，公式保持原样。"
+        CompanionScripts =
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MainTex ("Texture", 2D) = "white" {}
+
+        [Region 3] _MieG ("Mie g", Range(-0.999, 0.999)) = 0.76
+    }
+
+    Formula
+    {
+        C = Σ T_sun · s · T_view · ds · L  (+ 多次时再加 σs·G_ALL)
+    }
+
+    [SLOT Transmittance Default="路径积分"]
+    [SLOT InScattering Default="单次" Signature="float3 EvaluateAtmosphere(float3 positionWS)"]
+
+    HLSLINCLUDE
+    {
+        float3 RayleiCoefficient (float h)
+        {
+            float3 sigma = float3(5.802,13.558,33.1)*1e-6;
+            float H = 8500.0;
+            float Rho = exp(-h/H);
+            return sigma * Rho;
+        }
+        float RayleiPhase (float cosTheta)
+        {
+            return 3.0/(16.0*PI) * (1.0 + cosTheta * cosTheta);
+        }
+        float3 MieCoefficient (float h)
+        {
+            float3 sigma = float3(3.996,3.996,3.996)*1e-6;
+            float H = 1200.0;
+            float Rho = exp(-h/H);
+            return sigma * Rho;
+        }
+        float MiePhase (float cosTheta,float g)
+        {
+            float a = 3.0/(8.0*PI);
+            float b = (1.0- g * g)/(2.0+g*g);
+            float c = 1.0 + cosTheta * cosTheta;
+            float d = pow(1.0+g*g-2.0*g*cosTheta,1.5);
+            return a * b * (c / d);
+        }
+        float3 MieAbsorption (float h)
+        {
+            float3 sigma = float3(4.40,4.40,4.40)*1e-6;
+            float H = 1200.0;
+            float Rho = exp(-h/H);
+            return sigma * Rho;
+        }
+        float3 OzoneAbsorption (float h)
+        {
+            float3 sigma = float3(0.650,1.881,0.085)*1e-6;
+            float center = 25000.0;
+            float width = 15000.0;
+            float Rho = max(0.0, 1.0 - abs(h - center) / width);
+            return sigma * Rho;
+        }
+
+        static const float EarthRadius = 6360000.0;
+        static const float AtmosphereHeight = 100000.0;
+
+        float3 Extinction (float h)
+        {
+            return RayleiCoefficient(h) + MieCoefficient(h) + MieAbsorption(h) + OzoneAbsorption(h);
+        }
+
+        float Height (float3 p, float3 planetCenter)
+        {
+            return max(length(p - planetCenter) - EarthRadius, 0.0);
+        }
+
+        float RayIntersectSphere (float3 center, float radius, float3 origin, float3 dir)
+        {
+            float3 oc = origin - center;
+            float b = dot(oc, dir);
+            float c = dot(oc, oc) - radius * radius;
+            float disc = b * b - c;
+            if (disc < 0.0)
+                return -1.0;
+
+            float s = sqrt(disc);
+            float tNear = -b - s;
+            float tFar = -b + s;
+            if (tNear > 1e-2)
+                return tNear;
+            if (tFar > 1e-2)
+                return tFar;
+            return -1.0;
+        }
+
+        // #SLOT_INJECT
+
+        ShaderDIYVaryings Vert (float4 vertex : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            o.positionWS = TransformObjectToWorld(vertex.xyz);
+            o.positionCS = TransformObjectToHClip(vertex.xyz);
+            o.uv = TRANSFORM_TEX(uv, _MainTex);
+            o.normalWS = 0;
+            o.tangentWS = 0;
+            o.viewDirWS = 0;
+            o.vertexSH = 0;
+            o.fogFactor = 0;
+            return o;
+        }
+
+        float4 Frag (ShaderDIYVaryings i) : SV_Target
+        {
+            return float4(EvaluateAtmosphere(i.positionWS), 1.0);
+        }
+    }
+}

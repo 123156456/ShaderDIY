@@ -1,0 +1,32 @@
+Module "NewModule" Slot="CustomTerm" Category="Custom"
+{
+    Properties
+    {
+        [Region 3] _TermScale ("模块强度", Range(0,2)) = 1
+    }
+
+    Cost
+    {
+        ALU = 6
+        Texture = 0
+        Interpolator = 0
+    }
+
+    Keywords
+    {
+        _SLOT_NEW
+    }
+
+    Formula
+    {
+        F = albedo · N·L · _TermScale
+    }
+
+    HLSL
+    {
+        FUNC_SIGNATURE
+        {
+            FUNC_BODY
+        }
+    }
+}

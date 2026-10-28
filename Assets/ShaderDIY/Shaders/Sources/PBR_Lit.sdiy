@@ -1,0 +1,165 @@
+ShaderDIY "ShaderDIY/PBR/Lit"
+{
+    Meta
+    {
+        Category = PBR
+        Pipeline = URP
+        Description = "PBRjinsu 前向 Pass：D/G/F/F0 与直接/间接项可替换，公式保持原样。"
+        CompanionScripts =
+    }
+
+    Properties
+    {
+        [Tab 主贴图]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MainTex ("Texture", 2D) = "white" {}
+
+        [Tab 法线]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _NormalMap ("Normal Map", 2D) = "bump" {}
+
+        [Tab 金属度]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _MetallicMap ("Metallic Map", 2D) = "white" {}
+
+        [Tab 粗糙度]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _RoughnessMap ("Roughness Map", 2D) = "white" {}
+
+        [Tab 高光]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _SpecularMap ("Specular Map", 2D) = "white" {}
+
+        [Tab 自发光]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _EmissionMap ("Emission Map", 2D) = "white" {}
+
+        [Tab AO]
+        [Region 2][TexOps(TilingOffset, Channel, Invert, MipBias)]
+        _OcclusionMap ("Occlusion Map", 2D) = "white" {}
+
+        [Region 3] _Color ("Color", Color) = (1,1,1,1)
+        [Region 3] _Metallic ("Metallic", Range(0,1)) = 0
+        [Region 3] _Roughness ("Roughness", Range(0,1)) = 0.5
+        [HDR] [Region 3] _EmissionColor ("Emission Color", Color) = (0,0,0,1)
+        [Region 3] _Occlusion ("Occlusion", Range(0,1)) = 1
+        [Region 3] _Cutoff ("Alpha Cutoff", Range(0,1)) = 0.5
+    }
+
+    Formula
+    {
+        C = (Dd+Ds)·radiance + (Id+Is)·AO + E + SSS + Parallax → Refract
+    }
+
+    [SLOT NDF Default="GGX_D" Signature="float EvaluateNDF(ShadingContext ctx)"]
+    [SLOT G Default="Smith" Signature="float EvaluateG(ShadingContext ctx)"]
+    [SLOT F Default="Schlick" Signature="float3 EvaluateF(ShadingContext ctx)"]
+    [SLOT F0 Default="Dielectric04" Signature="float3 EvaluateF0(ShadingContext ctx)"]
+    [SLOT Light Default="主光" Signature="void EvaluateLight(inout ShadingContext ctx)"]
+    [SLOT DirectSpecular Default="GGX" Signature="float3 EvaluateDirectSpecular(ShadingContext ctx)"]
+    [SLOT DirectDiffuse Default="Lambert" Signature="float3 EvaluateDirectDiffuse(ShadingContext ctx)"]
+    [SLOT IndirectDiffuse Default="SH" Signature="float3 EvaluateIndirectDiffuse(ShadingContext ctx)"]
+    [SLOT IndirectSpecular Default="IBL" Signature="float3 EvaluateIndirectSpecular(ShadingContext ctx)"]
+    [SLOT LayerSSS Default="无" Kind="Addon" Signature="float3 EvaluateLayerSSS(ShadingContext ctx)"]
+    [SLOT LayerParallax Default="无" Kind="Addon" Signature="float3 EvaluateLayerParallax(ShadingContext ctx)"]
+    [SLOT LayerRefraction Default="无" Kind="Addon" Signature="float4 EvaluateLayerRefraction(ShadingContext ctx, float3 result)"]
+
+    HLSLINCLUDE
+    {
+        // #SLOT_INJECT
+
+        ShaderDIYVaryings Vert(float4 positionOS : POSITION, float3 normalOS : NORMAL, float4 tangentOS : TANGENT, float2 uv : TEXCOORD0)
+        {
+            ShaderDIYVaryings o;
+            o.positionCS = TransformObjectToHClip(positionOS.xyz);
+            o.uv = uv;
+            o.normalWS = TransformObjectToWorldNormal(normalOS);
+            o.tangentWS = float4(TransformObjectToWorldDir(tangentOS.xyz), tangentOS.w);
+            o.positionWS = TransformObjectToWorld(positionOS.xyz);
+            o.viewDirWS = 0;
+            o.vertexSH = 0;
+            o.fogFactor = 0;
+            return o;
+        }
+
+        float4 Frag(ShaderDIYVaryings i) : SV_Target
+        {
+            float3 normalWS = normalize(i.normalWS);
+            float3 tangentWS = normalize(i.tangentWS.xyz);
+            float3 bitangentWS = normalize(cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w * unity_WorldTransformParams.w);
+            float3x3 TBN = float3x3(tangentWS, bitangentWS, normalWS);
+            float2 uv = TRANSFORM_TEX(i.uv, _MainTex);
+            float3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uv));
+            float3 nDir = normalize(mul(normalTS, TBN));
+            float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.positionWS);
+
+            float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+            #ifndef _LAYER_REFRACTION
+            clip(col.a - _Cutoff);
+            #endif
+            float metallic = SAMPLE_TEXTURE2D(_MetallicMap, sampler_MetallicMap, uv).r;
+            float roughness = SAMPLE_TEXTURE2D(_RoughnessMap, sampler_RoughnessMap, uv).r;
+            float occlusion = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).r;
+            float3 specularColor = SAMPLE_TEXTURE2D(_SpecularMap, sampler_SpecularMap, uv).rgb;
+            float3 emissionColor = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, uv).rgb * _EmissionColor.rgb;
+            float3 mainColor = col.rgb + _Color.rgb;
+
+            ShadingContext ctx = (ShadingContext)0;
+            ctx.positionWS = i.positionWS;
+            ctx.positionCS = i.positionCS;
+            ctx.uv = i.uv;
+            ctx.albedo = mainColor;
+            ctx.alpha = col.a;
+            ctx.metallic = _Metallic * metallic;
+            ctx.perceptualRoughness = _Roughness * roughness;
+            ctx.roughness = _Roughness * roughness;
+            ctx.occlusion = _Occlusion * occlusion;
+            ctx.emission = emissionColor;
+            ctx.specularColor = specularColor;
+            ctx.N = nDir;
+            ctx.V = viewDir;
+            ctx.T = tangentWS;
+            ctx.B = bitangentWS;
+            ctx.Ng = normalWS;
+            EvaluateLight(ctx);
+            float3 lightDir = ctx.L;
+            float3 lightColor = ctx.lightColor;
+            float3 hDir = normalize(lightDir + viewDir);
+            float NoL = saturate(dot(nDir, lightDir));
+            float NoV = saturate(dot(nDir, viewDir));
+            float NoH = saturate(dot(nDir, hDir));
+            float VoH = saturate(dot(viewDir, hDir));
+            ctx.L = lightDir;
+            ctx.H = hDir;
+            ctx.TdotH = dot(tangentWS, hDir);
+            ctx.BdotH = dot(bitangentWS, hDir);
+            ctx.TdotL = dot(tangentWS, lightDir);
+            ctx.BdotL = dot(bitangentWS, lightDir);
+            ctx.NdotV = NoV;
+            ctx.NdotL = NoL;
+            ctx.NdotH = NoH;
+            ctx.VdotH = VoH;
+            ctx.bakedGI = SampleSH(nDir);
+            ctx.f0 = EvaluateF0(ctx);
+
+            float3 specular = EvaluateDirectSpecular(ctx);
+            float3 diffuse = EvaluateDirectDiffuse(ctx);
+
+            float3 radiance = lightColor * NoL * ctx.attenuation;
+            float3 directColor = diffuse + specular * radiance;
+
+            #ifndef _DIFFUSE_SSS
+            float3 indirectDiffuse = EvaluateIndirectDiffuse(ctx);
+            #else
+            float3 indirectDiffuse = 0;
+            #endif
+            float3 indirectSpecular = EvaluateIndirectSpecular(ctx);
+            float3 indirectColor = (indirectDiffuse + indirectSpecular) * _Occlusion * occlusion;
+
+            float3 finalColor = directColor + indirectColor + emissionColor;
+            finalColor += EvaluateLayerSSS(ctx);
+            finalColor += EvaluateLayerParallax(ctx);
+            return EvaluateLayerRefraction(ctx, finalColor);
+        }
+    }
+}
